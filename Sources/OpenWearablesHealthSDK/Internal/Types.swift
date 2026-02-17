@@ -488,6 +488,13 @@ extension OpenWearablesHealthSDK {
         case .equestrianSports: return "equestrian"
         case .play: return "play"
         case .trackAndField: return "track_and_field"
+        case .bowling: return "bowling"
+        case .gymnastics: return "gymnastics"
+        case .mixedMetabolicCardioTraining: return "mixed_metabolic_cardio_training"
+        case .sailing: return "sailing"
+        case .swimBikeRun: return "swim_bike_run"
+        case .transition: return "transition"
+        case .underwaterDiving: return "underwater_diving"
         case .other: return "other"
         @unknown default: return "other"
         }
