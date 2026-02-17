@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/master.swiftdeps"
+  },
+  "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Tests/OpenWearablesHealthSDKTests/OpenWearablesHealthSDKTests.swift": {
+    "dependencies": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.d",
+    "object": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.swift.o",
+    "swiftmodule": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.swiftdeps",
+    "diagnostics": "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.dia"
+  }
+}

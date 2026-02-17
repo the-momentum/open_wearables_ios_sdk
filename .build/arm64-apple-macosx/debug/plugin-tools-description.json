@@ -1,0 +1,783 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.xctest/Contents/MacOS/OpenWearablesHealthSDKPackageTests",
+      "packagePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK",
+      "productName" : "OpenWearablesHealthSDKPackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.OpenWearablesHealthSDK-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/sources",
+      "importPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Anchors.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Background.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Keychain.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Outbox.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Session.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Types.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/URLSessionDelegate.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/OpenWearablesHealthSDK.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "OpenWearablesHealthSDK",
+      "moduleOutputPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDK.swiftmodule",
+      "objects" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Anchors.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Background.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Keychain.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Outbox.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Session.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Types.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/URLSessionDelegate.swift.o",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/OpenWearablesHealthSDK.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx10.13",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/include/OpenWearablesHealthSDK-Swift.h",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-target",
+        "arm64-apple-ios14.0",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "openwearableshealthsdk"
+      ],
+      "outputFileMapPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Anchors.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Background.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Keychain.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Outbox.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Session.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Types.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/URLSessionDelegate.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/OpenWearablesHealthSDK.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDK.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Anchors.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Background.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Keychain.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Outbox.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Session.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Types.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/URLSessionDelegate.swift",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/OpenWearablesHealthSDK.swift"
+      ],
+      "tempsPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.OpenWearablesHealthSDKPackageTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/sources",
+      "importPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDKTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "OpenWearablesHealthSDKPackageTests",
+      "moduleOutputPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDKPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx10.13",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/include/OpenWearablesHealthSDKPackageTests-Swift.h",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-target",
+        "arm64-apple-ios14.0",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "openwearableshealthsdk"
+      ],
+      "outputFileMapPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDKPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.OpenWearablesHealthSDKTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/sources",
+      "importPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Tests/OpenWearablesHealthSDKTests/OpenWearablesHealthSDKTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDK.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "OpenWearablesHealthSDKTests",
+      "moduleOutputPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDKTests.swiftmodule",
+      "objects" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-target",
+        "arm64-apple-ios14.0",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "openwearableshealthsdk"
+      ],
+      "outputFileMapPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules/OpenWearablesHealthSDKTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Tests/OpenWearablesHealthSDKTests/OpenWearablesHealthSDKTests.swift"
+      ],
+      "tempsPath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "OpenWearablesHealthSDK" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "OpenWearablesHealthSDK",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-c",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Anchors.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Background.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Keychain.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Outbox.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Session.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Types.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/URLSessionDelegate.swift",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/OpenWearablesHealthSDK.swift",
+      "-I",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx10.13",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/include/OpenWearablesHealthSDK-Swift.h",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-target",
+      "arm64-apple-ios14.0",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "OpenWearablesHealthSDKPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "OpenWearablesHealthSDKPackageTests",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-c",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx10.13",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/include/OpenWearablesHealthSDKPackageTests-Swift.h",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-target",
+      "arm64-apple-ios14.0",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "OpenWearablesHealthSDKTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "OpenWearablesHealthSDKTests",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-c",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Tests/OpenWearablesHealthSDKTests/OpenWearablesHealthSDKTests.swift",
+      "-I",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-target",
+      "arm64-apple-ios14.0",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "openwearableshealthsdk",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "OpenWearablesHealthSDK" : [
+
+    ],
+    "OpenWearablesHealthSDKPackageTests" : [
+      "OpenWearablesHealthSDKTests",
+      "OpenWearablesHealthSDK"
+    ],
+    "OpenWearablesHealthSDKTests" : [
+      "OpenWearablesHealthSDK"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Anchors.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Background.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Keychain.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Outbox.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Session.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/Types.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/Internal/URLSessionDelegate.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Sources/OpenWearablesHealthSDK/OpenWearablesHealthSDK.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/sources"
+    },
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/sources"
+    },
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Anchors.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Background.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Keychain.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/OpenWearablesHealthSDK.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Outbox.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Session.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/Types.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDK.build/URLSessionDelegate.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/OpenWearablesHealthSDKTests.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKPackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/Tests/OpenWearablesHealthSDKTests/OpenWearablesHealthSDKTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/OpenWearablesHealthSDKTests.build/sources"
+    },
+    "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/kamilpiekarz/StudioProjects/OpenWearablesHealthSDK/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
