@@ -1,6 +1,175 @@
 import Foundation
 import HealthKit
 
+// MARK: - Public Health Data Type Enum
+
+/// Supported HealthKit data types for authorization and sync.
+///
+/// Use these values when calling `requestAuthorization(types:completion:)`.
+///
+/// ```swift
+/// sdk.requestAuthorization(types: [.steps, .heartRate, .sleep]) { granted in
+///     // ...
+/// }
+/// ```
+public enum HealthDataType: String, CaseIterable, Sendable {
+    // Activity & Mobility
+    case steps
+    case distanceWalkingRunning
+    case distanceCycling
+    case flightsClimbed
+    case walkingSpeed
+    case walkingStepLength
+    case walkingAsymmetryPercentage
+    case walkingDoubleSupportPercentage
+    case sixMinuteWalkTestDistance
+    case activeEnergy
+    case basalEnergy
+    
+    // Heart & Cardiovascular
+    case heartRate
+    case restingHeartRate
+    case heartRateVariabilitySDNN
+    case vo2Max
+    case oxygenSaturation
+    case respiratoryRate
+    
+    // Body Measurements
+    case bodyMass
+    case height
+    case bmi
+    case bodyFatPercentage
+    case leanBodyMass
+    case waistCircumference
+    case bodyTemperature
+    
+    // Blood & Metabolic
+    case bloodGlucose
+    case insulinDelivery
+    case bloodPressureSystolic
+    case bloodPressureDiastolic
+    case bloodPressure
+    
+    // Sleep & Mindfulness
+    case sleep
+    case mindfulSession
+    
+    // Reproductive Health
+    case menstrualFlow
+    case cervicalMucusQuality
+    case ovulationTestResult
+    case sexualActivity
+    
+    // Nutrition
+    case dietaryEnergyConsumed
+    case dietaryCarbohydrates
+    case dietaryProtein
+    case dietaryFatTotal
+    case dietaryWater
+    
+    // Workout
+    case workout
+    
+    // Aliases (alternative names for the same underlying type)
+    case restingEnergy
+    case bloodOxygen
+    
+    /// Converts this health data type to the corresponding HealthKit sample type.
+    /// Returns `nil` if the type is unavailable on the current OS version.
+    public func toHKSampleType() -> HKSampleType? {
+        switch self {
+        case .steps:
+            return HKObjectType.quantityType(forIdentifier: .stepCount)
+        case .distanceWalkingRunning:
+            return HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning)
+        case .distanceCycling:
+            return HKObjectType.quantityType(forIdentifier: .distanceCycling)
+        case .flightsClimbed:
+            return HKObjectType.quantityType(forIdentifier: .flightsClimbed)
+        case .walkingSpeed:
+            return HKObjectType.quantityType(forIdentifier: .walkingSpeed)
+        case .walkingStepLength:
+            return HKObjectType.quantityType(forIdentifier: .walkingStepLength)
+        case .walkingAsymmetryPercentage:
+            return HKObjectType.quantityType(forIdentifier: .walkingAsymmetryPercentage)
+        case .walkingDoubleSupportPercentage:
+            return HKObjectType.quantityType(forIdentifier: .walkingDoubleSupportPercentage)
+        case .sixMinuteWalkTestDistance:
+            return HKObjectType.quantityType(forIdentifier: .sixMinuteWalkTestDistance)
+        case .activeEnergy:
+            return HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)
+        case .basalEnergy, .restingEnergy:
+            return HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)
+        case .heartRate:
+            return HKObjectType.quantityType(forIdentifier: .heartRate)
+        case .restingHeartRate:
+            return HKObjectType.quantityType(forIdentifier: .restingHeartRate)
+        case .heartRateVariabilitySDNN:
+            return HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
+        case .vo2Max:
+            return HKObjectType.quantityType(forIdentifier: .vo2Max)
+        case .oxygenSaturation, .bloodOxygen:
+            return HKObjectType.quantityType(forIdentifier: .oxygenSaturation)
+        case .respiratoryRate:
+            return HKObjectType.quantityType(forIdentifier: .respiratoryRate)
+        case .bodyMass:
+            return HKObjectType.quantityType(forIdentifier: .bodyMass)
+        case .height:
+            return HKObjectType.quantityType(forIdentifier: .height)
+        case .bmi:
+            return HKObjectType.quantityType(forIdentifier: .bodyMassIndex)
+        case .bodyFatPercentage:
+            return HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)
+        case .leanBodyMass:
+            return HKObjectType.quantityType(forIdentifier: .leanBodyMass)
+        case .waistCircumference:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .waistCircumference)
+            }
+            return nil
+        case .bodyTemperature:
+            return HKObjectType.quantityType(forIdentifier: .bodyTemperature)
+        case .bloodGlucose:
+            return HKObjectType.quantityType(forIdentifier: .bloodGlucose)
+        case .insulinDelivery:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .insulinDelivery)
+            }
+            return nil
+        case .bloodPressureSystolic:
+            return HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)
+        case .bloodPressureDiastolic:
+            return HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)
+        case .bloodPressure:
+            return HKObjectType.correlationType(forIdentifier: .bloodPressure)
+        case .sleep:
+            return HKObjectType.categoryType(forIdentifier: .sleepAnalysis)
+        case .mindfulSession:
+            return HKObjectType.categoryType(forIdentifier: .mindfulSession)
+        case .menstrualFlow:
+            return HKObjectType.categoryType(forIdentifier: .menstrualFlow)
+        case .cervicalMucusQuality:
+            return HKObjectType.categoryType(forIdentifier: .cervicalMucusQuality)
+        case .ovulationTestResult:
+            return HKObjectType.categoryType(forIdentifier: .ovulationTestResult)
+        case .sexualActivity:
+            return HKObjectType.categoryType(forIdentifier: .sexualActivity)
+        case .dietaryEnergyConsumed:
+            return HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)
+        case .dietaryCarbohydrates:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates)
+        case .dietaryProtein:
+            return HKObjectType.quantityType(forIdentifier: .dietaryProtein)
+        case .dietaryFatTotal:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)
+        case .dietaryWater:
+            return HKObjectType.quantityType(forIdentifier: .dietaryWater)
+        case .workout:
+            return HKObjectType.workoutType()
+        }
+    }
+}
+
 extension OpenWearablesHealthSDK {
 
     // MARK: - Public API
@@ -132,101 +301,14 @@ extension OpenWearablesHealthSDK {
     }
 
     // MARK: - Type mapping
-    internal func mapTypes(_ names: [String]) -> [HKSampleType] {
-        var out: [HKSampleType] = []
-        for n in names {
-            switch n {
-            case "steps":
-                if let t = HKObjectType.quantityType(forIdentifier: .stepCount) { out.append(t) }
-            case "distanceWalkingRunning":
-                if let t = HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning) { out.append(t) }
-            case "distanceCycling":
-                if let t = HKObjectType.quantityType(forIdentifier: .distanceCycling) { out.append(t) }
-            case "flightsClimbed":
-                if let t = HKObjectType.quantityType(forIdentifier: .flightsClimbed) { out.append(t) }
-            case "walkingSpeed":
-                if let t = HKObjectType.quantityType(forIdentifier: .walkingSpeed) { out.append(t) }
-            case "walkingStepLength":
-                if let t = HKObjectType.quantityType(forIdentifier: .walkingStepLength) { out.append(t) }
-            case "walkingAsymmetryPercentage":
-                if let t = HKObjectType.quantityType(forIdentifier: .walkingAsymmetryPercentage) { out.append(t) }
-            case "walkingDoubleSupportPercentage":
-                if let t = HKObjectType.quantityType(forIdentifier: .walkingDoubleSupportPercentage) { out.append(t) }
-            case "sixMinuteWalkTestDistance":
-                if let t = HKObjectType.quantityType(forIdentifier: .sixMinuteWalkTestDistance) { out.append(t) }
-            case "activeEnergy":
-                if let t = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) { out.append(t) }
-            case "basalEnergy":
-                if let t = HKObjectType.quantityType(forIdentifier: .basalEnergyBurned) { out.append(t) }
-            case "heartRate":
-                if let t = HKObjectType.quantityType(forIdentifier: .heartRate) { out.append(t) }
-            case "restingHeartRate":
-                if let t = HKObjectType.quantityType(forIdentifier: .restingHeartRate) { out.append(t) }
-            case "heartRateVariabilitySDNN":
-                if let t = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) { out.append(t) }
-            case "vo2Max":
-                if let t = HKObjectType.quantityType(forIdentifier: .vo2Max) { out.append(t) }
-            case "oxygenSaturation":
-                if let t = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) { out.append(t) }
-            case "respiratoryRate":
-                if let t = HKObjectType.quantityType(forIdentifier: .respiratoryRate) { out.append(t) }
-            case "bodyMass":
-                if let t = HKObjectType.quantityType(forIdentifier: .bodyMass) { out.append(t) }
-            case "height":
-                if let t = HKObjectType.quantityType(forIdentifier: .height) { out.append(t) }
-            case "bmi":
-                if let t = HKObjectType.quantityType(forIdentifier: .bodyMassIndex) { out.append(t) }
-            case "bodyFatPercentage":
-                if let t = HKObjectType.quantityType(forIdentifier: .bodyFatPercentage) { out.append(t) }
-            case "leanBodyMass":
-                if let t = HKObjectType.quantityType(forIdentifier: .leanBodyMass) { out.append(t) }
-            case "waistCircumference":
-                if #available(iOS 16.0, *), let t = HKObjectType.quantityType(forIdentifier: .waistCircumference) { out.append(t) }
-            case "bodyTemperature":
-                if let t = HKObjectType.quantityType(forIdentifier: .bodyTemperature) { out.append(t) }
-            case "bloodGlucose":
-                if let t = HKObjectType.quantityType(forIdentifier: .bloodGlucose) { out.append(t) }
-            case "insulinDelivery":
-                if #available(iOS 16.0, *), let t = HKObjectType.quantityType(forIdentifier: .insulinDelivery) { out.append(t) }
-            case "bloodPressureSystolic":
-                if let t = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic) { out.append(t) }
-            case "bloodPressureDiastolic":
-                if let t = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) { out.append(t) }
-            case "bloodPressure":
-                if let t = HKObjectType.correlationType(forIdentifier: .bloodPressure) { out.append(t) }
-            case "restingEnergy":
-                if let t = HKObjectType.quantityType(forIdentifier: .basalEnergyBurned) { out.append(t) }
-            case "bloodOxygen":
-                if let t = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) { out.append(t) }
-            case "sleep":
-                if let t = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { out.append(t) }
-            case "mindfulSession":
-                if let t = HKObjectType.categoryType(forIdentifier: .mindfulSession) { out.append(t) }
-            case "menstrualFlow":
-                if let t = HKObjectType.categoryType(forIdentifier: .menstrualFlow) { out.append(t) }
-            case "cervicalMucusQuality":
-                if let t = HKObjectType.categoryType(forIdentifier: .cervicalMucusQuality) { out.append(t) }
-            case "ovulationTestResult":
-                if let t = HKObjectType.categoryType(forIdentifier: .ovulationTestResult) { out.append(t) }
-            case "sexualActivity":
-                if let t = HKObjectType.categoryType(forIdentifier: .sexualActivity) { out.append(t) }
-            case "dietaryEnergyConsumed":
-                if let t = HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed) { out.append(t) }
-            case "dietaryCarbohydrates":
-                if let t = HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates) { out.append(t) }
-            case "dietaryProtein":
-                if let t = HKObjectType.quantityType(forIdentifier: .dietaryProtein) { out.append(t) }
-            case "dietaryFatTotal":
-                if let t = HKObjectType.quantityType(forIdentifier: .dietaryFatTotal) { out.append(t) }
-            case "dietaryWater":
-                if let t = HKObjectType.quantityType(forIdentifier: .dietaryWater) { out.append(t) }
-            case "workout":
-                out.append(HKObjectType.workoutType())
-            default:
-                break
-            }
-        }
-        return out
+    
+    internal func mapTypes(_ types: [HealthDataType]) -> [HKSampleType] {
+        return types.compactMap { $0.toHKSampleType() }
+    }
+    
+    /// Legacy mapping from raw strings - used for restoring persisted types from Keychain.
+    internal func mapTypesFromStrings(_ names: [String]) -> [HKSampleType] {
+        return names.compactMap { HealthDataType(rawValue: $0)?.toHKSampleType() }
     }
 
     // MARK: - Record mappers

@@ -178,7 +178,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         OpenWearablesHealthSdkKeychain.saveHost(host)
         
         if let storedTypes = OpenWearablesHealthSdkKeychain.getTrackedTypes() {
-            self.trackedTypes = mapTypes(storedTypes)
+            self.trackedTypes = mapTypesFromStrings(storedTypes)
             logMessage("Restored \(trackedTypes.count) tracked types")
         }
         
@@ -260,16 +260,29 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     
     // MARK: - Public API: HealthKit Authorization
     
-    /// Request HealthKit read authorization for the given type identifiers.
-    public func requestAuthorization(types: [String], completion: @escaping (Bool) -> Void) {
+    /// Request HealthKit read authorization for the given health data types.
+    ///
+    /// ```swift
+    /// sdk.requestAuthorization(types: [.steps, .heartRate, .sleep]) { granted in
+    ///     print("Authorization granted: \(granted)")
+    /// }
+    /// ```
+    public func requestAuthorization(types: [HealthDataType], completion: @escaping (Bool) -> Void) {
         self.trackedTypes = mapTypes(types)
-        OpenWearablesHealthSdkKeychain.saveTrackedTypes(types)
+        OpenWearablesHealthSdkKeychain.saveTrackedTypes(types.map { $0.rawValue })
         
         logMessage("Requesting auth for \(trackedTypes.count) types")
         
         requestAuthorizationInternal { ok in
             completion(ok)
         }
+    }
+    
+    /// Request HealthKit read authorization using raw string identifiers.
+    @available(*, deprecated, message: "Use requestAuthorization(types: [HealthDataType], completion:) instead")
+    public func requestAuthorization(types: [String], completion: @escaping (Bool) -> Void) {
+        let healthTypes = types.compactMap { HealthDataType(rawValue: $0) }
+        requestAuthorization(types: healthTypes, completion: completion)
     }
     
     // MARK: - Public API: Sync

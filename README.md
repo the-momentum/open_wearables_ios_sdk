@@ -75,7 +75,7 @@ sdk.signIn(
 )
 
 // Request HealthKit authorization
-sdk.requestAuthorization(types: ["steps", "heartRate", "sleep"]) { granted in
+sdk.requestAuthorization(types: [.steps, .heartRate, .sleep]) { granted in
     if granted {
         // Start background sync
         sdk.startBackgroundSync { started in
