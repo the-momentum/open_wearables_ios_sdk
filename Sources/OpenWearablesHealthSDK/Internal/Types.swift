@@ -174,34 +174,48 @@ extension OpenWearablesHealthSDK {
 
     // MARK: - Public API
     internal func serialize(samples: [HKSample], type: HKSampleType) -> [String: Any] {
+        var workouts: [[String: Any]] = []
         var records: [[String: Any]] = []
+        var sleep: [[String: Any]] = []
+        let df = ISO8601DateFormatter()
 
         for s in samples {
             if let w = s as? HKWorkout {
-                records.append(_mapWorkout(w))
+                workouts.append(_mapWorkout(w))
             } else if let q = s as? HKQuantitySample {
                 records.append(_mapQuantity(q))
             } else if let c = s as? HKCategorySample {
-                records.append(_mapCategory(c))
+                if c.categoryType.identifier == HKCategoryTypeIdentifier.sleepAnalysis.rawValue {
+                    sleep.append(_mapSleep(c))
+                } else {
+                    records.append(_mapCategory(c))
+                }
             } else if let corr = s as? HKCorrelation {
                 records.append(contentsOf: _mapCorrelation(corr))
             } else {
                 records.append([
-                    "uuid": s.uuid.uuidString,
+                    "id": s.uuid.uuidString,
                     "type": s.sampleType.identifier,
+                    "startDate": df.string(from: s.startDate),
+                    "endDate": df.string(from: s.endDate),
+                    "zoneOffset": NSNull(),
+                    "source": _mapSource(s.sourceRevision, device: s.device),
                     "value": NSNull(),
                     "unit": NSNull(),
-                    "startDate": ISO8601DateFormatter().string(from: s.startDate),
-                    "endDate": ISO8601DateFormatter().string(from: s.endDate),
-                    "source": _mapSource(s.sourceRevision, device: s.device),
-                    "recordMetadata": _metadataList(s.metadata)
+                    "parentId": NSNull(),
+                    "metadata": _metadataDict(s.metadata)
                 ])
             }
         }
 
         return [
+            "provider": "apple_health",
+            "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
+            "syncTimestamp": df.string(from: Date()),
             "data": [
-                "records": records
+                "workouts": workouts,
+                "records": records,
+                "sleep": sleep
             ]
         ]
     }
@@ -227,7 +241,7 @@ extension OpenWearablesHealthSDK {
                         records.append(_mapQuantityEfficient(q, dateFormatter: dateFormatter))
                     } else if let c = s as? HKCategorySample {
                         if c.categoryType.identifier == HKCategoryTypeIdentifier.sleepAnalysis.rawValue {
-                            sleep.append(_mapCategoryEfficient(c, dateFormatter: dateFormatter))
+                            sleep.append(_mapSleepEfficient(c, dateFormatter: dateFormatter))
                         } else {
                             records.append(_mapCategoryEfficient(c, dateFormatter: dateFormatter))
                         }
@@ -235,14 +249,16 @@ extension OpenWearablesHealthSDK {
                         records.append(contentsOf: _mapCorrelationEfficient(corr, dateFormatter: dateFormatter))
                     } else {
                         records.append([
-                            "uuid": s.uuid.uuidString,
+                            "id": s.uuid.uuidString,
                             "type": s.sampleType.identifier,
-                            "value": NSNull(),
-                            "unit": NSNull(),
                             "startDate": dateFormatter.string(from: s.startDate),
                             "endDate": dateFormatter.string(from: s.endDate),
+                            "zoneOffset": NSNull(),
                             "source": _mapSource(s.sourceRevision, device: s.device),
-                            "recordMetadata": _metadataList(s.metadata)
+                            "value": NSNull(),
+                            "unit": NSNull(),
+                            "parentId": NSNull(),
+                            "metadata": _metadataDict(s.metadata)
                         ])
                     }
                 }
@@ -250,6 +266,9 @@ extension OpenWearablesHealthSDK {
         }
         
         return [
+            "provider": "apple_health",
+            "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
+            "syncTimestamp": dateFormatter.string(from: Date()),
             "data": [
                 "workouts": workouts,
                 "records": records,
@@ -263,6 +282,7 @@ extension OpenWearablesHealthSDK {
         var workouts: [[String: Any]] = []
         var records: [[String: Any]] = []
         var sleep: [[String: Any]] = []
+        let df = ISO8601DateFormatter()
         
         for s in samples {
             if let w = s as? HKWorkout {
@@ -271,7 +291,7 @@ extension OpenWearablesHealthSDK {
                 records.append(_mapQuantity(q))
             } else if let c = s as? HKCategorySample {
                 if c.categoryType.identifier == HKCategoryTypeIdentifier.sleepAnalysis.rawValue {
-                    sleep.append(_mapCategory(c))
+                    sleep.append(_mapSleep(c))
                 } else {
                     records.append(_mapCategory(c))
                 }
@@ -279,19 +299,24 @@ extension OpenWearablesHealthSDK {
                 records.append(contentsOf: _mapCorrelation(corr))
             } else {
                 records.append([
-                    "uuid": s.uuid.uuidString,
+                    "id": s.uuid.uuidString,
                     "type": s.sampleType.identifier,
+                    "startDate": df.string(from: s.startDate),
+                    "endDate": df.string(from: s.endDate),
+                    "zoneOffset": NSNull(),
+                    "source": _mapSource(s.sourceRevision, device: s.device),
                     "value": NSNull(),
                     "unit": NSNull(),
-                    "startDate": ISO8601DateFormatter().string(from: s.startDate),
-                    "endDate": ISO8601DateFormatter().string(from: s.endDate),
-                    "source": _mapSource(s.sourceRevision, device: s.device),
-                    "recordMetadata": _metadataList(s.metadata)
+                    "parentId": NSNull(),
+                    "metadata": _metadataDict(s.metadata)
                 ])
             }
         }
         
         return [
+            "provider": "apple_health",
+            "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
+            "syncTimestamp": df.string(from: Date()),
             "data": [
                 "workouts": workouts,
                 "records": records,
@@ -317,7 +342,7 @@ extension OpenWearablesHealthSDK {
         let df = ISO8601DateFormatter()
         let (unit, unitOut) = _defaultUnit(for: q.quantityType)
         
-        let value: Double
+        var value: Double
         let finalUnit: String
         
         if q.quantity.is(compatibleWith: unit) {
@@ -329,29 +354,52 @@ extension OpenWearablesHealthSDK {
             finalUnit = fallbackUnit.unitString
         }
 
+        if q.quantityType.identifier == HKQuantityTypeIdentifier.oxygenSaturation.rawValue {
+            value *= 100
+        }
+
         return [
-            "uuid": q.uuid.uuidString,
+            "id": q.uuid.uuidString,
             "type": q.quantityType.identifier,
-            "value": value,
-            "unit": finalUnit,
             "startDate": df.string(from: q.startDate),
             "endDate": df.string(from: q.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(q.sourceRevision, device: q.device),
-            "recordMetadata": _metadataList(q.metadata)
+            "value": value,
+            "unit": finalUnit,
+            "parentId": NSNull(),
+            "metadata": _metadataDict(q.metadata)
         ]
     }
 
     private func _mapCategory(_ c: HKCategorySample) -> [String: Any] {
         let df = ISO8601DateFormatter()
         return [
-            "uuid": c.uuid.uuidString,
+            "id": c.uuid.uuidString,
             "type": c.categoryType.identifier,
-            "value": c.value,
-            "unit": NSNull(),
             "startDate": df.string(from: c.startDate),
             "endDate": df.string(from: c.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(c.sourceRevision, device: c.device),
-            "recordMetadata": _metadataList(c.metadata)
+            "value": c.value,
+            "unit": NSNull(),
+            "parentId": NSNull(),
+            "metadata": _metadataDict(c.metadata)
+        ]
+    }
+
+    private func _mapSleep(_ c: HKCategorySample) -> [String: Any] {
+        let df = ISO8601DateFormatter()
+        return [
+            "id": c.uuid.uuidString,
+            "parentId": NSNull(),
+            "stage": _sleepStageString(c.value),
+            "startDate": df.string(from: c.startDate),
+            "endDate": df.string(from: c.endDate),
+            "zoneOffset": NSNull(),
+            "source": _mapSource(c.sourceRevision, device: c.device),
+            "values": NSNull(),
+            "metadata": NSNull()
         ]
     }
 
@@ -365,14 +413,16 @@ extension OpenWearablesHealthSDK {
                 let (unit, unitOut) = _defaultUnit(for: q.quantityType)
                 let value = q.quantity.doubleValue(for: unit)
                 records.append([
-                    "uuid": q.uuid.uuidString,
+                    "id": q.uuid.uuidString,
                     "type": q.quantityType.identifier,
-                    "value": value,
-                    "unit": unitOut,
                     "startDate": df.string(from: q.startDate),
                     "endDate": df.string(from: q.endDate),
+                    "zoneOffset": NSNull(),
                     "source": source,
-                    "recordMetadata": _metadataList(q.metadata)
+                    "value": value,
+                    "unit": unitOut,
+                    "parentId": NSNull(),
+                    "metadata": _metadataDict(q.metadata)
                 ])
             }
         }
@@ -384,12 +434,21 @@ extension OpenWearablesHealthSDK {
         let stats = _buildWorkoutStats(w)
 
         return [
-            "uuid": w.uuid.uuidString,
+            "id": w.uuid.uuidString,
+            "parentId": NSNull(),
             "type": _workoutTypeString(w.workoutActivityType),
             "startDate": df.string(from: w.startDate),
             "endDate": df.string(from: w.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(w.sourceRevision, device: w.device),
-            "workoutStatistics": stats
+            "title": NSNull(),
+            "notes": NSNull(),
+            "values": stats,
+            "segments": NSNull(),
+            "laps": NSNull(),
+            "route": NSNull(),
+            "samples": NSNull(),
+            "metadata": NSNull()
         ]
     }
 
@@ -582,24 +641,13 @@ extension OpenWearablesHealthSDK {
         }
     }
 
-    private func _metadataList(_ meta: [String: Any]?) -> [[String: Any]] {
-        var list: [[String: Any]] = []
-        guard let meta = meta else { return list }
-        for (k, v) in meta {
-            list.append([
-                "key": k,
-                "value": "\(v)"
-            ])
-        }
-        return list
-    }
     
     // MARK: - Memory-efficient mappers
     
     private func _mapQuantityEfficient(_ q: HKQuantitySample, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
         let (unit, unitOut) = _defaultUnit(for: q.quantityType)
         
-        let value: Double
+        var value: Double
         let finalUnit: String
         
         if q.quantity.is(compatibleWith: unit) {
@@ -611,28 +659,50 @@ extension OpenWearablesHealthSDK {
             finalUnit = fallbackUnit.unitString
         }
 
+        if q.quantityType.identifier == HKQuantityTypeIdentifier.oxygenSaturation.rawValue {
+            value *= 100
+        }
+
         return [
-            "uuid": q.uuid.uuidString,
+            "id": q.uuid.uuidString,
             "type": q.quantityType.identifier,
-            "value": value,
-            "unit": finalUnit,
             "startDate": dateFormatter.string(from: q.startDate),
             "endDate": dateFormatter.string(from: q.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(q.sourceRevision, device: q.device),
-            "recordMetadata": _metadataList(q.metadata)
+            "value": value,
+            "unit": finalUnit,
+            "parentId": NSNull(),
+            "metadata": _metadataDict(q.metadata)
         ]
     }
 
     private func _mapCategoryEfficient(_ c: HKCategorySample, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
         return [
-            "uuid": c.uuid.uuidString,
+            "id": c.uuid.uuidString,
             "type": c.categoryType.identifier,
-            "value": c.value,
-            "unit": NSNull(),
             "startDate": dateFormatter.string(from: c.startDate),
             "endDate": dateFormatter.string(from: c.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(c.sourceRevision, device: c.device),
-            "recordMetadata": _metadataList(c.metadata)
+            "value": c.value,
+            "unit": NSNull(),
+            "parentId": NSNull(),
+            "metadata": _metadataDict(c.metadata)
+        ]
+    }
+
+    private func _mapSleepEfficient(_ c: HKCategorySample, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
+        return [
+            "id": c.uuid.uuidString,
+            "parentId": NSNull(),
+            "stage": _sleepStageString(c.value),
+            "startDate": dateFormatter.string(from: c.startDate),
+            "endDate": dateFormatter.string(from: c.endDate),
+            "zoneOffset": NSNull(),
+            "source": _mapSource(c.sourceRevision, device: c.device),
+            "values": NSNull(),
+            "metadata": NSNull()
         ]
     }
 
@@ -645,14 +715,16 @@ extension OpenWearablesHealthSDK {
                 let (unit, unitOut) = _defaultUnit(for: q.quantityType)
                 let value = q.quantity.doubleValue(for: unit)
                 records.append([
-                    "uuid": q.uuid.uuidString,
+                    "id": q.uuid.uuidString,
                     "type": q.quantityType.identifier,
-                    "value": value,
-                    "unit": unitOut,
                     "startDate": dateFormatter.string(from: q.startDate),
                     "endDate": dateFormatter.string(from: q.endDate),
+                    "zoneOffset": NSNull(),
                     "source": source,
-                    "recordMetadata": _metadataList(q.metadata)
+                    "value": value,
+                    "unit": unitOut,
+                    "parentId": NSNull(),
+                    "metadata": _metadataDict(q.metadata)
                 ])
             }
         }
@@ -663,12 +735,21 @@ extension OpenWearablesHealthSDK {
         let stats = _buildWorkoutStats(w)
 
         return [
-            "uuid": w.uuid.uuidString,
+            "id": w.uuid.uuidString,
+            "parentId": NSNull(),
             "type": _workoutTypeString(w.workoutActivityType),
             "startDate": dateFormatter.string(from: w.startDate),
             "endDate": dateFormatter.string(from: w.endDate),
+            "zoneOffset": NSNull(),
             "source": _mapSource(w.sourceRevision, device: w.device),
-            "workoutStatistics": stats
+            "title": NSNull(),
+            "notes": NSNull(),
+            "values": stats,
+            "segments": NSNull(),
+            "laps": NSNull(),
+            "route": NSNull(),
+            "samples": NSNull(),
+            "metadata": NSNull()
         ]
     }
     
@@ -769,35 +850,67 @@ extension OpenWearablesHealthSDK {
         return stats
     }
     
-    // MARK: - Source mapper
+    // MARK: - Source mapper (unified format)
     
     private func _mapSource(_ sourceRevision: HKSourceRevision, device: HKDevice?) -> [String: Any] {
-        var result: [String: Any] = [:]
-        
-        result["name"] = sourceRevision.source.name
-        result["bundleIdentifier"] = sourceRevision.source.bundleIdentifier
-        
-        if let version = sourceRevision.version { result["version"] = version }
-        if let productType = sourceRevision.productType { result["productType"] = productType }
-        
+        var result: [String: Any] = [
+            "appId": sourceRevision.source.bundleIdentifier,
+            "deviceId": NSNull(),
+            "deviceName": (device?.name) as Any? ?? NSNull(),
+            "deviceManufacturer": (device?.manufacturer) as Any? ?? NSNull(),
+            "deviceModel": (sourceRevision.productType) as Any? ?? NSNull(),
+            "deviceType": _inferDeviceType(productType: sourceRevision.productType, device: device),
+            "recordingMethod": NSNull()
+        ]
+
+        if let hw = device?.hardwareVersion { result["deviceHardwareVersion"] = hw }
+        if let sw = device?.softwareVersion { result["deviceSoftwareVersion"] = sw }
+
         let osVersion = sourceRevision.operatingSystemVersion
         result["operatingSystemVersion"] = [
             "majorVersion": osVersion.majorVersion,
             "minorVersion": osVersion.minorVersion,
             "patchVersion": osVersion.patchVersion
         ]
-        
-        if let device = device {
-            if let name = device.name { result["deviceName"] = name }
-            if let manufacturer = device.manufacturer { result["deviceManufacturer"] = manufacturer }
-            if let model = device.model { result["deviceModel"] = model }
-            if let hardwareVersion = device.hardwareVersion { result["deviceHardwareVersion"] = hardwareVersion }
-            if let softwareVersion = device.softwareVersion { result["deviceSoftwareVersion"] = softwareVersion }
-            if let firmwareVersion = device.firmwareVersion { result["deviceFirmwareVersion"] = firmwareVersion }
-            if let localIdentifier = device.localIdentifier { result["deviceLocalIdentifier"] = localIdentifier }
-            if let udiDeviceIdentifier = device.udiDeviceIdentifier { result["deviceUdiDeviceIdentifier"] = udiDeviceIdentifier }
-        }
-        
+
         return result
+    }
+    
+    private func _inferDeviceType(productType: String?, device: HKDevice?) -> Any {
+        if let pt = productType?.lowercased() {
+            if pt.contains("watch") { return "watch" }
+            if pt.contains("iphone") { return "phone" }
+            if pt.contains("ipad") { return "phone" }
+        }
+        if let name = device?.name?.lowercased() {
+            if name.contains("watch") { return "watch" }
+            if name.contains("iphone") { return "phone" }
+        }
+        return NSNull()
+    }
+    
+    // MARK: - Metadata (unified: dict or null)
+    
+    private func _metadataDict(_ meta: [String: Any]?) -> Any {
+        guard let meta = meta, !meta.isEmpty else { return NSNull() }
+        var result: [String: Any] = [:]
+        for (k, v) in meta {
+            result[k] = "\(v)"
+        }
+        return result
+    }
+    
+    // MARK: - Sleep stage mapping
+    
+    private func _sleepStageString(_ value: Int) -> String {
+        switch value {
+        case 0: return "in_bed"
+        case 1: return "sleeping"
+        case 2: return "awake"
+        case 3: return "light"
+        case 4: return "deep"
+        case 5: return "rem"
+        default: return "unknown"
+        }
     }
 }
