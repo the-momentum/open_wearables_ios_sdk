@@ -133,7 +133,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     internal var syncEndpoint: URL? {
         guard let userId = userId else { return nil }
         guard let base = apiBaseUrl else { return nil }
-        return URL(string: "\(base)/sdk/users/\(userId)/sync/apple")
+        return URL(string: "\(base)/sdk/users/\(userId)/sync")
     }
     
     // MARK: - Init
