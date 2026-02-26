@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = 'OpenWearablesHealthSDK'
-  s.version      = '0.2.0'
+  s.version      = '0.3.0'
   s.summary      = 'iOS SDK for background health data synchronization to the Open Wearables platform.'
   s.description  = <<-DESC
     Native iOS SDK for secure background health data synchronization from Apple HealthKit
