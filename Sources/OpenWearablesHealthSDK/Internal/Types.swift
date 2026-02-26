@@ -209,7 +209,7 @@ extension OpenWearablesHealthSDK {
         }
 
         return [
-            "provider": "apple_health",
+            "provider": "apple",
             "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
             "syncTimestamp": df.string(from: Date()),
             "data": [
@@ -266,7 +266,7 @@ extension OpenWearablesHealthSDK {
         }
         
         return [
-            "provider": "apple_health",
+            "provider": "apple",
             "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
             "syncTimestamp": dateFormatter.string(from: Date()),
             "data": [
@@ -314,7 +314,7 @@ extension OpenWearablesHealthSDK {
         }
         
         return [
-            "provider": "apple_health",
+            "provider": "apple",
             "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
             "syncTimestamp": df.string(from: Date()),
             "data": [
