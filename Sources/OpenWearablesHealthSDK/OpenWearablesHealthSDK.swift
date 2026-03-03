@@ -19,7 +19,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     /// Shared singleton instance.
     public static let shared = OpenWearablesHealthSDK()
     
-    internal static let sdkVersion = "0.1.0"
+    internal static let sdkVersion = "0.5.0"
     
     // MARK: - Public Callbacks
     
@@ -133,7 +133,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     internal var syncEndpoint: URL? {
         guard let userId = userId else { return nil }
         guard let base = apiBaseUrl else { return nil }
-        return URL(string: "\(base)/sdk/users/\(userId)/sync/apple")
+        return URL(string: "\(base)/sdk/users/\(userId)/sync")
     }
     
     // MARK: - Init
@@ -529,11 +529,14 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         let existingState = loadSyncState()
         let isResuming = existingState != nil && existingState!.hasProgress
         
+        let effectiveFullExport: Bool
         if isResuming {
-            logMessage("Resuming sync (\(existingState!.totalSentCount) already sent, \(existingState!.completedTypes.count) types done)")
+            effectiveFullExport = existingState!.fullExport
+            logMessage("Resuming sync (fullExport: \(effectiveFullExport), \(existingState!.totalSentCount) already sent, \(existingState!.completedTypes.count) types done)")
         } else {
-            logMessage("Starting streaming sync (fullExport: \(fullExport), \(queryableTypes.count) types)")
-            _ = startNewSyncState(fullExport: fullExport, types: queryableTypes)
+            effectiveFullExport = fullExport
+            logMessage("Starting streaming sync (fullExport: \(effectiveFullExport), \(queryableTypes.count) types)")
+            _ = startNewSyncState(fullExport: effectiveFullExport, types: queryableTypes)
         }
         
         let startIndex = isResuming ? getResumeTypeIndex() : 0
@@ -541,7 +544,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         processTypesSequentially(
             types: queryableTypes,
             typeIndex: startIndex,
-            fullExport: fullExport,
+            fullExport: effectiveFullExport,
             endpoint: endpoint,
             credential: credential,
             isBackground: isBackground
@@ -617,7 +620,31 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         type: HKSampleType, fullExport: Bool, endpoint: URL, credential: String,
         chunkLimit: Int, completion: @escaping (Bool) -> Void
     ) {
-        let anchor = fullExport ? nil : loadAnchor(for: type)
+        if fullExport {
+            logMessage("\(shortTypeName(type.identifier)): querying (newest first)...")
+            processTypeNewestFirst(
+                type: type, olderThan: nil, endpoint: endpoint,
+                credential: credential, chunkLimit: chunkLimit
+            ) { [weak self] success in
+                guard let self = self else { completion(false); return }
+                if success {
+                    self.captureCurrentAnchor(for: type) { anchor in
+                        var anchorData: Data? = nil
+                        if let anchor = anchor {
+                            anchorData = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true)
+                        }
+                        self.updateTypeProgress(typeIdentifier: type.identifier, sentInChunk: 0, isComplete: true, anchorData: anchorData)
+                        self.logMessage("  \(self.shortTypeName(type.identifier)): complete (anchor captured)")
+                        completion(true)
+                    }
+                } else {
+                    completion(false)
+                }
+            }
+            return
+        }
+        
+        let anchor = loadAnchor(for: type)
         logMessage("\(shortTypeName(type.identifier)): querying...")
         
         let query = HKAnchoredObjectQuery(type: type, predicate: nil, anchor: anchor, limit: chunkLimit) {
@@ -682,6 +709,105 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             }
         }
         
+        healthStore.execute(query)
+    }
+    
+    // MARK: - Newest-First Full Export (HKSampleQuery sorted descending)
+    
+    private func processTypeNewestFirst(
+        type: HKSampleType, olderThan: Date?, endpoint: URL, credential: String,
+        chunkLimit: Int, completion: @escaping (Bool) -> Void
+    ) {
+        syncLock.lock()
+        let cancelled = syncCancelled
+        syncLock.unlock()
+        if cancelled { completion(false); return }
+        
+        var predicate: NSPredicate? = nil
+        if let olderThan = olderThan {
+            predicate = HKQuery.predicateForSamples(withStart: nil, end: olderThan, options: .strictEndDate)
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: chunkLimit, sortDescriptors: [sortDescriptor]) {
+            [weak self] _, samplesOrNil, error in
+            autoreleasepool {
+                guard let self = self else { completion(false); return }
+                
+                self.syncLock.lock()
+                let cancelled = self.syncCancelled
+                self.syncLock.unlock()
+                if cancelled { completion(false); return }
+                
+                if let error = error {
+                    if self.isProtectedDataError(error) {
+                        self.logMessage("\(self.shortTypeName(type.identifier)): protected data inaccessible - pausing sync")
+                        self.pendingSyncAfterUnlock = true
+                        completion(false)
+                        return
+                    }
+                    self.logMessage("\(self.shortTypeName(type.identifier)): \(error.localizedDescription) - skipping")
+                    self.updateTypeProgress(typeIdentifier: type.identifier, sentInChunk: 0, isComplete: true, anchorData: nil)
+                    completion(true)
+                    return
+                }
+                
+                let samples = samplesOrNil ?? []
+                if samples.isEmpty {
+                    self.logMessage("  \(self.shortTypeName(type.identifier)): all data sent (newest first)")
+                    completion(true)
+                    return
+                }
+                
+                self.logMessage("  \(self.shortTypeName(type.identifier)): \(samples.count) samples (newest first)")
+                let payload = self.serializeCombinedStreaming(samples: samples)
+                
+                let isLastChunk = samples.count < chunkLimit
+                
+                self.sendChunkStreaming(
+                    payload: payload, typeIdentifier: type.identifier, sampleCount: samples.count,
+                    anchorData: nil, isLastChunk: false, endpoint: endpoint, credential: credential
+                ) { [weak self] success in
+                    guard let self = self else { completion(false); return }
+                    if success {
+                        if isLastChunk {
+                            completion(true)
+                        } else {
+                            let oldestEndDate = samples.last!.endDate
+                            self.processTypeNewestFirst(
+                                type: type, olderThan: oldestEndDate, endpoint: endpoint,
+                                credential: credential, chunkLimit: chunkLimit, completion: completion
+                            )
+                        }
+                    } else {
+                        completion(false)
+                    }
+                }
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    // MARK: - Anchor Capture (for incremental sync after full export)
+    
+    private func captureCurrentAnchor(for type: HKSampleType, completion: @escaping (HKQueryAnchor?) -> Void) {
+        logMessage("  \(shortTypeName(type.identifier)): capturing anchor for future incremental sync...")
+        captureAnchorStep(type: type, anchor: nil, limit: 10000, completion: completion)
+    }
+    
+    private func captureAnchorStep(type: HKSampleType, anchor: HKQueryAnchor?, limit: Int, completion: @escaping (HKQueryAnchor?) -> Void) {
+        let query = HKAnchoredObjectQuery(type: type, predicate: nil, anchor: anchor, limit: limit) {
+            [weak self] _, samples, _, newAnchor, error in
+            guard let self = self else { completion(nil); return }
+            let count = samples?.count ?? 0
+            if count >= limit {
+                self.captureAnchorStep(type: type, anchor: newAnchor, limit: limit, completion: completion)
+            } else {
+                completion(newAnchor)
+            }
+        }
         healthStore.execute(query)
     }
     
