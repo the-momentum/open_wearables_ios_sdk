@@ -171,10 +171,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     private override init() {
         super.init()
 
-        // Host is persisted by configure() but previously only lived in memory at
-        // runtime. Restore it immediately so background relaunches (URLSession /
-        // BGTask) can build apiBaseUrl and refresh tokens before the host app
-        // calls configure(host:) again. See the-momentum/open_wearables_ios_sdk#18.
+        // Restore host from persistence (needed before configure() on background relaunch)
         restorePersistedHostIfNeeded()
         
         let bgCfg = URLSessionConfiguration.background(withIdentifier: bgSessionId)
@@ -205,17 +202,14 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         bgCompletionHandler = handler
     }
     
-    // MARK: - Host restore
-
-    /// Loads `host` from persistence when the in-memory value is nil.
-    /// Safe to call repeatedly; no-ops when `host` is already set.
+    /// Restore `host` from persistence when it is not already set in memory.
     internal func restorePersistedHostIfNeeded() {
         guard host == nil else { return }
         if let persisted = OpenWearablesHealthSdkKeychain.getHost(), !persisted.isEmpty {
             host = persisted
         }
     }
-
+    
     // MARK: - Public API: Configure
     
     /// Initialize the SDK with the backend host URL.

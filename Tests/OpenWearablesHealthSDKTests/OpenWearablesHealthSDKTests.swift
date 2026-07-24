@@ -31,26 +31,26 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["completedTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
-
-    func testRestorePersistedHostIfNeededLoadsHostWhenMemoryNil() {
+    
+    func testRestorePersistedHostWhenMemoryNil() {
         let sdk = OpenWearablesHealthSDK.shared
         sdk.configure(host: "https://restore-test.example.com")
         sdk.host = nil
         XCTAssertNil(sdk.host)
-
+        
         sdk.restorePersistedHostIfNeeded()
-
+        
         XCTAssertEqual(sdk.host, "https://restore-test.example.com")
         XCTAssertEqual(sdk.apiBaseUrl, "https://restore-test.example.com/api/v1")
     }
-
-    func testRestorePersistedHostIfNeededDoesNotOverwriteInMemoryHost() {
+    
+    func testRestorePersistedHostDoesNotOverwriteMemory() {
         let sdk = OpenWearablesHealthSDK.shared
         sdk.configure(host: "https://persisted.example.com")
         sdk.host = "https://in-memory.example.com"
-
+        
         sdk.restorePersistedHostIfNeeded()
-
+        
         XCTAssertEqual(sdk.host, "https://in-memory.example.com")
     }
 }
