@@ -184,7 +184,7 @@ extension OpenWearablesHealthSDK {
             if let httpResponse = response as? HTTPURLResponse {
                 switch self.combinedUploadDecision(for: httpResponse.statusCode) {
                 case .success:
-                    self.logMessage("HTTP (httpResponse.statusCode)")
+                    self.logMessage("HTTP \(httpResponse.statusCode)")
                     
                     self.handleSuccessfulUpload(itemPath: itemURL.path, anchorPath: anchorsURL?.path, wasFullExport: wasFullExport)
                     
@@ -201,13 +201,13 @@ extension OpenWearablesHealthSDK {
                         completion: completion
                     )
                 case .failWithoutAdvance:
-                    var errorMsg = "HTTP (httpResponse.statusCode)"
+                    var errorMsg = "HTTP \(httpResponse.statusCode)"
                     if let data = data, let errorBody = String(data: data, encoding: .utf8) {
                         let truncated = errorBody.count > 200 ? String(errorBody.prefix(200)) + "..." : errorBody
-                        errorMsg += " - (truncated)"
+                        errorMsg += " - \(truncated)"
                     }
                     self.logMessage(errorMsg)
-                    self.logMessage("Upload failed with (httpResponse.statusCode) - not advancing anchors")
+                    self.logMessage("Upload failed with \(httpResponse.statusCode) - not advancing anchors")
                     try? FileManager.default.removeItem(atPath: payloadURL.path)
                     completion(false)
                 }
