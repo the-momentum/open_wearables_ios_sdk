@@ -31,8 +31,6 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["completedTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
-}
-
 
     func testCombinedUploadHttpDecisionSuccessCodes() {
         XCTAssertEqual(CombinedUploadHttp.decision(forStatusCode: 200), .success)
@@ -53,4 +51,4 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
             )
         }
     }
-
+}
