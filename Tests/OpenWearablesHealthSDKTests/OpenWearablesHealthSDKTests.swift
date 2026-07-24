@@ -31,8 +31,6 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["completedTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
-}
-
 
     func testRestorePersistedHostIfNeededLoadsHostWhenMemoryNil() {
         let sdk = OpenWearablesHealthSDK.shared
@@ -55,4 +53,4 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
 
         XCTAssertEqual(sdk.host, "https://in-memory.example.com")
     }
-
+}
