@@ -32,3 +32,25 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["isFullExport"])
     }
 }
+
+
+    func testCombinedUploadHttpDecisionSuccessCodes() {
+        XCTAssertEqual(CombinedUploadHttp.decision(forStatusCode: 200), .success)
+        XCTAssertEqual(CombinedUploadHttp.decision(forStatusCode: 201), .success)
+        XCTAssertEqual(CombinedUploadHttp.decision(forStatusCode: 299), .success)
+    }
+
+    func testCombinedUploadHttpDecisionRefreshOn401() {
+        XCTAssertEqual(CombinedUploadHttp.decision(forStatusCode: 401), .refreshAndRetry)
+    }
+
+    func testCombinedUploadHttpDecisionFailsWithoutAdvanceOnClientAndServerErrors() {
+        for code in [400, 403, 404, 422, 499, 500, 502, 503] {
+            XCTAssertEqual(
+                CombinedUploadHttp.decision(forStatusCode: code),
+                .failWithoutAdvance,
+                "status \(code)"
+            )
+        }
+    }
+

@@ -729,15 +729,6 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             guard let self = self else { completion(false); return }
             if !success { completion(false); return }
             
-            // Update cursors for types that aren't done
-            for result in results where !result.isDone {
-                if fullExport {
-                    rrState.olderThanCursors[result.type.identifier] = result.nextOlderThan
-                } else if let anchor = result.newAnchor {
-                    rrState.anchorCursors[result.type.identifier] = anchor
-                }
-            }
-            
             // Mark empty/done types (no data to send) as complete immediately
             let emptyDone = results.filter { $0.samples.isEmpty && $0.isDone }
             for result in emptyDone {
@@ -787,6 +778,17 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             ) { [weak self] sendSuccess in
                 guard let self = self else { completion(false); return }
                 if !sendSuccess { completion(false); return }
+
+                // Only advance in-memory cursors after a successful upload so a
+                // rejected chunk (e.g. HTTP 400) can be rebuilt from the prior
+                // HealthKit anchors on the next wake.
+                for result in withData where !result.isDone {
+                    if fullExport {
+                        rrState.olderThanCursors[result.type.identifier] = result.nextOlderThan
+                    } else if let anchor = result.newAnchor {
+                        rrState.anchorCursors[result.type.identifier] = anchor
+                    }
+                }
                 
                 // Phase 3: Update progress for all types that had data
                 for result in withData {
