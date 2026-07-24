@@ -201,13 +201,12 @@ extension OpenWearablesHealthSDK {
                         completion: completion
                     )
                 case .failWithoutAdvance:
-                    var errorMsg = "HTTP \(httpResponse.statusCode)"
+                    var errorMsg = "Upload failed with HTTP \(httpResponse.statusCode) - not advancing anchors"
                     if let data = data, let errorBody = String(data: data, encoding: .utf8) {
                         let truncated = errorBody.count > 200 ? String(errorBody.prefix(200)) + "..." : errorBody
                         errorMsg += " - \(truncated)"
                     }
                     self.logMessage(errorMsg)
-                    self.logMessage("Upload failed with \(httpResponse.statusCode) - not advancing anchors")
                     try? FileManager.default.removeItem(atPath: payloadURL.path)
                     completion(false)
                 }
