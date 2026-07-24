@@ -779,9 +779,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
                 guard let self = self else { completion(false); return }
                 if !sendSuccess { completion(false); return }
 
-                // Only advance in-memory cursors after a successful upload so a
-                // rejected chunk (e.g. HTTP 400) can be rebuilt from the prior
-                // HealthKit anchors on the next wake.
+                // Update cursors for types that aren't done (only after successful upload)
                 for result in withData where !result.isDone {
                     if fullExport {
                         rrState.olderThanCursors[result.type.identifier] = result.nextOlderThan
