@@ -80,6 +80,24 @@ extension OpenWearablesHealthSDK {
         completion()
     }
     
+    // MARK: - Combined upload HTTP status
+
+    /// How a combined-upload HTTP status should affect sync progress.
+    internal enum CombinedUploadHttpDecision {
+        /// 2xx - advance anchors and continue.
+        case success
+        /// 401 - refresh credentials and retry once.
+        case refreshAndRetry
+        /// Any other status - do not advance anchors; fail this sync.
+        case failWithoutAdvance
+    }
+
+    internal func combinedUploadDecision(for statusCode: Int) -> CombinedUploadHttpDecision {
+        if (200...299).contains(statusCode) { return .success }
+        if statusCode == 401 { return .refreshAndRetry }
+        return .failWithoutAdvance
+    }
+
     // MARK: - Combined upload
     internal func enqueueCombinedUpload(
         payload: [String: Any],
@@ -164,9 +182,9 @@ extension OpenWearablesHealthSDK {
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                switch CombinedUploadHttp.decision(forStatusCode: httpResponse.statusCode) {
+                switch self.combinedUploadDecision(for: httpResponse.statusCode) {
                 case .success:
-                    self.logMessage("HTTP \(httpResponse.statusCode)")
+                    self.logMessage("HTTP (httpResponse.statusCode)")
                     
                     self.handleSuccessfulUpload(itemPath: itemURL.path, anchorPath: anchorsURL?.path, wasFullExport: wasFullExport)
                     
@@ -183,13 +201,13 @@ extension OpenWearablesHealthSDK {
                         completion: completion
                     )
                 case .failWithoutAdvance:
-                    var errorMsg = "HTTP \(httpResponse.statusCode)"
+                    var errorMsg = "HTTP (httpResponse.statusCode)"
                     if let data = data, let errorBody = String(data: data, encoding: .utf8) {
                         let truncated = errorBody.count > 200 ? String(errorBody.prefix(200)) + "..." : errorBody
-                        errorMsg += " - \(truncated)"
+                        errorMsg += " - (truncated)"
                     }
                     self.logMessage(errorMsg)
-                    self.logMessage("Upload failed with \(httpResponse.statusCode) - not advancing anchors; will retry later with rebuilt payload")
+                    self.logMessage("Upload failed with (httpResponse.statusCode) - not advancing anchors")
                     try? FileManager.default.removeItem(atPath: payloadURL.path)
                     completion(false)
                 }
