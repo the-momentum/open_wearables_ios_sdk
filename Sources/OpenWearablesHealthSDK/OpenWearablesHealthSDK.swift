@@ -729,15 +729,6 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             guard let self = self else { completion(false); return }
             if !success { completion(false); return }
             
-            // Update cursors for types that aren't done
-            for result in results where !result.isDone {
-                if fullExport {
-                    rrState.olderThanCursors[result.type.identifier] = result.nextOlderThan
-                } else if let anchor = result.newAnchor {
-                    rrState.anchorCursors[result.type.identifier] = anchor
-                }
-            }
-            
             // Mark empty/done types (no data to send) as complete immediately
             let emptyDone = results.filter { $0.samples.isEmpty && $0.isDone }
             for result in emptyDone {
@@ -787,6 +778,15 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             ) { [weak self] sendSuccess in
                 guard let self = self else { completion(false); return }
                 if !sendSuccess { completion(false); return }
+
+                // Update cursors for types that aren't done (only after successful upload)
+                for result in withData where !result.isDone {
+                    if fullExport {
+                        rrState.olderThanCursors[result.type.identifier] = result.nextOlderThan
+                    } else if let anchor = result.newAnchor {
+                        rrState.anchorCursors[result.type.identifier] = anchor
+                    }
+                }
                 
                 // Phase 3: Update progress for all types that had data
                 for result in withData {

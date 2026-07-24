@@ -31,4 +31,22 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["completedTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
+    
+    func testCombinedUploadDecisionSuccess() {
+        let sdk = OpenWearablesHealthSDK.shared
+        XCTAssertEqual(sdk.combinedUploadDecision(for: 200), .success)
+        XCTAssertEqual(sdk.combinedUploadDecision(for: 201), .success)
+    }
+    
+    func testCombinedUploadDecisionRefreshOn401() {
+        let sdk = OpenWearablesHealthSDK.shared
+        XCTAssertEqual(sdk.combinedUploadDecision(for: 401), .refreshAndRetry)
+    }
+    
+    func testCombinedUploadDecisionFailsWithoutAdvance() {
+        let sdk = OpenWearablesHealthSDK.shared
+        for code in [400, 403, 422, 500, 503] {
+            XCTAssertEqual(sdk.combinedUploadDecision(for: code), .failWithoutAdvance)
+        }
+    }
 }

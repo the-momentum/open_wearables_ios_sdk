@@ -80,6 +80,24 @@ extension OpenWearablesHealthSDK {
         completion()
     }
     
+    // MARK: - Combined upload HTTP status
+
+    /// How a combined-upload HTTP status should affect sync progress.
+    internal enum CombinedUploadHttpDecision {
+        /// 2xx - advance anchors and continue.
+        case success
+        /// 401 - refresh credentials and retry once.
+        case refreshAndRetry
+        /// Any other status - do not advance anchors; fail this sync.
+        case failWithoutAdvance
+    }
+
+    internal func combinedUploadDecision(for statusCode: Int) -> CombinedUploadHttpDecision {
+        if (200...299).contains(statusCode) { return .success }
+        if statusCode == 401 { return .refreshAndRetry }
+        return .failWithoutAdvance
+    }
+
     // MARK: - Combined upload
     internal func enqueueCombinedUpload(
         payload: [String: Any],
@@ -164,14 +182,15 @@ extension OpenWearablesHealthSDK {
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                if (200...299).contains(httpResponse.statusCode) {
+                switch self.combinedUploadDecision(for: httpResponse.statusCode) {
+                case .success:
                     self.logMessage("HTTP \(httpResponse.statusCode)")
                     
                     self.handleSuccessfulUpload(itemPath: itemURL.path, anchorPath: anchorsURL?.path, wasFullExport: wasFullExport)
                     
                     try? FileManager.default.removeItem(atPath: payloadURL.path)
                     completion(true)
-                } else if httpResponse.statusCode == 401 {
+                case .refreshAndRetry:
                     self.handle401ForUpload(
                         payloadData: payloadData,
                         endpoint: endpoint,
@@ -181,21 +200,15 @@ extension OpenWearablesHealthSDK {
                         wasFullExport: wasFullExport,
                         completion: completion
                     )
-                } else {
-                    var errorMsg = "HTTP \(httpResponse.statusCode)"
+                case .failWithoutAdvance:
+                    var errorMsg = "Upload failed with HTTP \(httpResponse.statusCode) - not advancing anchors"
                     if let data = data, let errorBody = String(data: data, encoding: .utf8) {
                         let truncated = errorBody.count > 200 ? String(errorBody.prefix(200)) + "..." : errorBody
                         errorMsg += " - \(truncated)"
                     }
                     self.logMessage(errorMsg)
                     try? FileManager.default.removeItem(atPath: payloadURL.path)
-                    
-                    if (400...499).contains(httpResponse.statusCode) {
-                        self.logMessage("Skipping chunk due to \(httpResponse.statusCode) - continuing sync")
-                        completion(true)
-                    } else {
-                        completion(false)
-                    }
+                    completion(false)
                 }
             } else {
                 self.logMessage("No HTTP response")
