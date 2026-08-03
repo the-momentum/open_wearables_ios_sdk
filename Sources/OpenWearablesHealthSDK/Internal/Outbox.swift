@@ -145,7 +145,6 @@ extension OpenWearablesHealthSDK {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyAuth(to: &req, credential: credential)
         req.httpBody = payloadData
-        req.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
         
         self.logPayloadSummary(payloadData, label: "Sending")
 
@@ -246,7 +245,6 @@ extension OpenWearablesHealthSDK {
                 retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 self.applyAuth(to: &retryReq, credential: newCredential)
                 retryReq.httpBody = payloadData
-                retryReq.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
                 
                 let retryTask = self.foregroundSession.dataTask(with: retryReq) { [weak self] retryData, retryResponse, retryError in
                     guard let self = self else { return }
@@ -363,7 +361,6 @@ extension OpenWearablesHealthSDK {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             applyAuth(to: &req, credential: credential)
             req.httpBody = payloadData
-            req.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
 
             let task = foregroundSession.dataTask(with: req) { data, response, error in
                 if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
@@ -391,7 +388,6 @@ extension OpenWearablesHealthSDK {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             applyAuth(to: &req, credential: credential)
             req.httpBody = payloadData
-            req.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
 
             let task = foregroundSession.dataTask(with: req) { data, response, error in
                 if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
