@@ -923,12 +923,17 @@ extension OpenWearablesHealthSDK {
     
     // MARK: - Sleep stage mapping
     
+    /// Maps HKCategoryValueSleepAnalysis raw values to stage strings.
+    /// Raw value 3 is `.asleepCore` — Apple's own name for the stage — so it
+    /// must serialize as "core". It previously emitted "light", which callers
+    /// could not distinguish from an undifferentiated asleep sample, causing
+    /// core sleep to be dropped from total-sleep aggregations.
     private func _sleepStageString(_ value: Int) -> String {
         switch value {
         case 0: return "in_bed"
         case 1: return "sleeping"
         case 2: return "awake"
-        case 3: return "light"
+        case 3: return "core"
         case 4: return "deep"
         case 5: return "rem"
         default: return "unknown"
