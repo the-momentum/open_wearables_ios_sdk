@@ -65,6 +65,14 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case dietaryCarbohydrates
     case dietaryProtein
     case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatMonounsaturated
+    case dietaryFatPolyunsaturated
+    case dietaryFiber
+    case dietarySugar
+    case dietarySodium
+    case dietaryCholesterol
+    case dietaryCaffeine
     case dietaryWater
     
     // Workout
@@ -162,6 +170,22 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .dietaryProtein)
         case .dietaryFatTotal:
             return HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)
+        case .dietaryFatSaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated)
+        case .dietaryFatMonounsaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated)
+        case .dietaryFatPolyunsaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)
+        case .dietaryFiber:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFiber)
+        case .dietarySugar:
+            return HKObjectType.quantityType(forIdentifier: .dietarySugar)
+        case .dietarySodium:
+            return HKObjectType.quantityType(forIdentifier: .dietarySodium)
+        case .dietaryCholesterol:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)
+        case .dietaryCaffeine:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
         case .dietaryWater:
             return HKObjectType.quantityType(forIdentifier: .dietaryWater)
         case .workout:
@@ -494,7 +518,15 @@ extension OpenWearablesHealthSDK {
             return (.count(), "count")
         case HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates),
              HKObjectType.quantityType(forIdentifier: .dietaryProtein),
-             HKObjectType.quantityType(forIdentifier: .dietaryFatTotal):
+             HKObjectType.quantityType(forIdentifier: .dietaryFatTotal),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated),
+             HKObjectType.quantityType(forIdentifier: .dietaryFiber),
+             HKObjectType.quantityType(forIdentifier: .dietarySugar),
+             HKObjectType.quantityType(forIdentifier: .dietarySodium),
+             HKObjectType.quantityType(forIdentifier: .dietaryCholesterol),
+             HKObjectType.quantityType(forIdentifier: .dietaryCaffeine):
             return (.gram(), "g")
         case HKObjectType.quantityType(forIdentifier: .dietaryWater):
             return (.liter(), "L")
