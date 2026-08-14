@@ -31,4 +31,36 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["completedTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
+    
+    func testRestorePersistedHostWhenMemoryNil() {
+        let sdk = OpenWearablesHealthSDK.shared
+        OpenWearablesHealthSdkKeychain.saveHost("https://restore-test.example.com")
+        sdk.host = nil
+        XCTAssertNil(sdk.host)
+
+        sdk.restorePersistedHostIfNeeded()
+
+        XCTAssertEqual(sdk.host, "https://restore-test.example.com")
+        XCTAssertEqual(sdk.apiBaseUrl, "https://restore-test.example.com/api/v1")
+
+        restoreHostState()
+    }
+
+    func testRestorePersistedHostDoesNotOverwriteMemory() {
+        let sdk = OpenWearablesHealthSDK.shared
+        OpenWearablesHealthSdkKeychain.saveHost("https://persisted.example.com")
+        sdk.host = "https://in-memory.example.com"
+
+        sdk.restorePersistedHostIfNeeded()
+
+        XCTAssertEqual(sdk.host, "https://in-memory.example.com")
+
+        restoreHostState()
+    }
+
+    /// Undo host mutations on the shared singleton and persisted store so other tests are unaffected.
+    private func restoreHostState() {
+        OpenWearablesHealthSdkKeychain.saveHost(nil)
+        OpenWearablesHealthSDK.shared.host = nil
+    }
 }

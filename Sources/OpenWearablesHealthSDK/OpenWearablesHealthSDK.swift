@@ -182,6 +182,9 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     
     private override init() {
         super.init()
+
+        // Restore host from persistence (needed before configure() on background relaunch)
+        restorePersistedHostIfNeeded()
         
         let bgCfg = URLSessionConfiguration.background(withIdentifier: bgSessionId)
         bgCfg.isDiscretionary = false
@@ -214,6 +217,14 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     /// Set the background URL session completion handler (call from AppDelegate).
     public static func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
         bgCompletionHandler = handler
+    }
+    
+    /// Restore `host` from persistence when it is not already set in memory.
+    internal func restorePersistedHostIfNeeded() {
+        guard host == nil else { return }
+        if let persisted = OpenWearablesHealthSdkKeychain.getHost(), !persisted.isEmpty {
+            host = persisted
+        }
     }
     
     // MARK: - Public API: Configure
