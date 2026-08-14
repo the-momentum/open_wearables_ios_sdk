@@ -69,7 +69,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     
     // Workout
     case workout
-    
+
+    // Workout Effort (iOS 18.0+ / watchOS 11.0+)
+    case workoutEffortScore
+    case estimatedWorkoutEffortScore
+
     // Aliases (alternative names for the same underlying type)
     case restingEnergy
     case bloodOxygen
@@ -166,6 +170,16 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .dietaryWater)
         case .workout:
             return HKObjectType.workoutType()
+        case .workoutEffortScore:
+            if #available(iOS 18.0, watchOS 11.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .workoutEffortScore)
+            }
+            return nil
+        case .estimatedWorkoutEffortScore:
+            if #available(iOS 18.0, watchOS 11.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .estimatedWorkoutEffortScore)
+            }
+            return nil
         }
     }
 }
