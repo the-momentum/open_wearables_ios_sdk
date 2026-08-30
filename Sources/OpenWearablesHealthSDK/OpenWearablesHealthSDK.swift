@@ -220,18 +220,29 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     
     /// Initialize the SDK with the backend host URL.
     /// This also restores previously tracked types and auto-resumes sync if it was active.
-    public func configure(host: String) {
+    ///
+    /// - Parameters:
+    ///   - host: Base host for the data-sync API (`{host}/api/v1/...`).
+    ///   - tokenRefreshURL: Optional absolute URL used to refresh the access
+    ///     token. When `nil`, the SDK refreshes against `{host}/api/v1/token/refresh`.
+    ///     Set this when your auth/mint server is separate from the sync host —
+    ///     the SDK posts `{"refresh_token": ...}` and expects
+    ///     `{"access_token": ..., "refresh_token": ...}` back. The value is
+    ///     persisted so background refresh tasks use it too.
+    public func configure(host: String, tokenRefreshURL: String? = nil) {
         OpenWearablesHealthSdkKeychain.clearKeychainIfReinstalled()
-        
+
         self.host = host
         OpenWearablesHealthSdkKeychain.saveHost(host)
-        
+        OpenWearablesHealthSdkKeychain.saveCustomRefreshUrl(tokenRefreshURL)
+
         if let storedTypes = OpenWearablesHealthSdkKeychain.getTrackedTypes() {
             self.trackedTypes = mapTypesFromStrings(storedTypes)
             logMessage("Restored \(trackedTypes.count) tracked types")
         }
-        
-        logMessage("Configured: host=\(host)")
+
+        let refreshTarget = tokenRefreshURL ?? "{host}/api/v1/token/refresh (default)"
+        logMessage("Configured: host=\(host), tokenRefreshURL=\(refreshTarget)")
         
         if OpenWearablesHealthSdkKeychain.isSyncActive() && OpenWearablesHealthSdkKeychain.hasSession() && !trackedTypes.isEmpty {
             logMessage("Auto-restoring background sync...")
@@ -1224,23 +1235,35 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             return
         }
         
-        guard let refreshToken = self.refreshToken, let base = self.apiBaseUrl else {
+        // Resolve the refresh endpoint: an explicit override (configure
+        // tokenRefreshURL:) wins, otherwise default to "{apiBaseUrl}/token/refresh".
+        // This lets deployments whose auth/mint server differs from the data-sync
+        // host refresh against the correct URL — including from the background
+        // refresh task, which reads the persisted override (see axl-app#39).
+        let resolvedRefreshUrl: String? = {
+            if let custom = OpenWearablesHealthSdkKeychain.getCustomRefreshUrl(),
+               !custom.isEmpty {
+                return custom
+            }
+            if let base = self.apiBaseUrl {
+                return "\(base)/token/refresh"
+            }
+            return nil
+        }()
+
+        guard let refreshToken = self.refreshToken,
+              let refreshUrlString = resolvedRefreshUrl,
+              let url = URL(string: refreshUrlString) else {
             tokenRefreshLock.unlock()
-            logMessage("Token refresh failed: no credentials")
+            logMessage("Token refresh failed: no credentials or refresh URL")
             completion(.authFailure)
             return
         }
-        
+
         isRefreshingToken = true
         tokenRefreshCallbacks.append(completion)
         tokenRefreshLock.unlock()
-        
-        guard let url = URL(string: "\(base)/token/refresh") else {
-            logMessage("Token refresh failed: invalid URL")
-            finishTokenRefresh(result: .authFailure)
-            return
-        }
-        
+
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
