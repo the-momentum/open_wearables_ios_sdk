@@ -54,51 +54,11 @@ extension OpenWearablesHealthSDK {
         ]
     }
 
-    // MARK: - Count Samples Per Type
-
-    internal func countSamplesForTypes(
-        _ types: [HKSampleType],
-        startDate: Date?,
-        endDate: Date,
-        completion: @escaping ([String: Int]) -> Void
-    ) {
-        var counts: [String: Int] = [:]
-        let lock = NSLock()
-        let group = DispatchGroup()
-
-        let predicate = HKQuery.predicateForSamples(
-            withStart: startDate ?? .distantPast,
-            end: endDate,
-            options: .strictStartDate
-        )
-
-        for type in types {
-            group.enter()
-            let query = HKSampleQuery(
-                sampleType: type,
-                predicate: predicate,
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: nil
-            ) { _, results, _ in
-                let count = results?.count ?? 0
-                lock.lock()
-                counts[type.identifier] = count
-                lock.unlock()
-                group.leave()
-            }
-            healthStore.execute(query)
-        }
-
-        group.notify(queue: .global(qos: .userInitiated)) {
-            completion(counts)
-        }
-    }
-
     // MARK: - Sync Start Log
 
     internal func sendSyncStartLog(
         types: [HKSampleType],
-        typeCounts: [String: Int],
+        typeCounts: [String: Int]?,
         startDate: Date?,
         endDate: Date,
         completion: @escaping () -> Void
@@ -110,8 +70,12 @@ extension OpenWearablesHealthSDK {
 
         let formatter = ISO8601DateFormatter()
 
-        let dataTypeCounts: [[String: Any]] = types.map {
-            ["type": $0.identifier, "count": typeCounts[$0.identifier] ?? 0]
+        let dataTypeCounts: [[String: Any]] = types.map { type in
+            var item: [String: Any] = ["type": type.identifier]
+            if let count = typeCounts?[type.identifier] {
+                item["count"] = count
+            }
+            return item
         }
 
         var timeRange: [String: String] = ["endDate": formatter.string(from: endDate)]

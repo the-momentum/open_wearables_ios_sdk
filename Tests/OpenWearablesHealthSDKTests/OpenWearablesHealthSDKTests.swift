@@ -29,6 +29,7 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNotNil(status["hasResumableSession"])
         XCTAssertNotNil(status["sentCount"])
         XCTAssertNotNil(status["completedTypes"])
+        XCTAssertNotNil(status["totalTypes"])
         XCTAssertNotNil(status["isFullExport"])
     }
 }

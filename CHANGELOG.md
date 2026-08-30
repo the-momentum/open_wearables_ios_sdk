@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* **Non-blocking full-history export**: initial sync now streams immediately instead of running unlimited HealthKit census queries across every tracked type first. Large Health stores no longer remain at zero progress before the first upload. `getSyncStatus()` now also exposes `totalTypes` for progress UI.
+* **Sync-start telemetry**: per-type counts are omitted when they are not known yet rather than blocking export to precompute them.
+
 ## 0.14.0
 
 * **Fixed full export poisoning**: when the first upload of a full export failed (offline, backend down, app killed), subsequent triggers overwrote the session as incremental without anchors — causing an infinite re-upload loop of old data. Full-export mode is now sticky until completed; already-poisoned devices self-heal.
