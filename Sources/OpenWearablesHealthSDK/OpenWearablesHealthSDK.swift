@@ -656,8 +656,28 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
                     }
                 }
                 
-                if allTypesCompleted {
-                    self.finalizeSyncState()
+                if allTypesCompleted,
+                   let credential = self.authCredential,
+                   let manifest = self.currentSyncUploadManifest(isFinal: true) {
+                    let finalPayload = self.serializeCombinedStreaming(samples: [])
+                    self.enqueueCombinedUpload(
+                        payload: finalPayload,
+                        anchors: [:],
+                        endpoint: endpoint,
+                        credential: credential,
+                        wasFullExport: effectiveFullExport,
+                        syncManifest: manifest
+                    ) { accepted in
+                        if !accepted {
+                            self.logMessage("Whole-sync completion marker was not accepted - will resume")
+                        }
+                        self.fullSyncStartTime = nil
+                        self.finishSync()
+                        completion()
+                    }
+                    return
+                } else if allTypesCompleted {
+                    self.logMessage("Whole-sync manifest unavailable - sync remains incomplete")
                 } else {
                     self.logMessage("Sync incomplete - will resume remaining types later")
                 }
@@ -836,10 +856,17 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             }
             
             let payload = self.serializeCombinedStreaming(samples: allSamples)
+            let submittedItemCount = self.submittedItemCount(in: payload)
+            guard let manifest = self.currentSyncUploadManifest(isFinal: false) else {
+                self.logMessage("Whole-sync manifest unavailable - pausing before upload")
+                completion(false)
+                return
+            }
             
             self.enqueueCombinedUpload(
                 payload: payload, anchors: [:], endpoint: endpoint,
-                credential: freshCredential, wasFullExport: false
+                credential: freshCredential, wasFullExport: false,
+                syncManifest: manifest
             ) { [weak self] sendSuccess in
                 guard let self = self else { completion(false); return }
                 if !sendSuccess { completion(false); return }
@@ -861,6 +888,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
                         }
                     }
                 }
+                self.markSyncUploadAccepted(manifest, submittedItemCount: submittedItemCount)
                 
                 // Phase 4: For full export, capture anchors for done types
                 let fullExportDone = withData.filter { $0.isDone }.map { $0.type } + doneTypesForAnchorCapture.filter { t in !withData.contains(where: { $0.type == t }) }

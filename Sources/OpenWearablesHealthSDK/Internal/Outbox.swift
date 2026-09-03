@@ -3,6 +3,13 @@ import HealthKit
 
 extension OpenWearablesHealthSDK {
 
+    internal struct SyncUploadManifest: Codable, Equatable {
+        let clientSyncId: String
+        let chunkIndex: Int
+        let isFinal: Bool
+        let totalItems: Int?
+    }
+
     // MARK: - Outbox model
     internal struct OutboxItem: Codable {
         let typeIdentifier: String
@@ -10,6 +17,7 @@ extension OpenWearablesHealthSDK {
         let payloadPath: String
         let anchorPath: String?
         let wasFullExport: Bool?
+        let syncManifest: SyncUploadManifest?
     }
 
     internal func outboxDir() -> URL {
@@ -33,6 +41,7 @@ extension OpenWearablesHealthSDK {
         endpoint: URL,
         credential: String,
         wasFullExport: Bool = false,
+        syncManifest: SyncUploadManifest? = nil,
         completion: @escaping (Bool) -> Void
     ) {
         guard let data = try? JSONSerialization.data(withJSONObject: payload) else {
@@ -73,7 +82,8 @@ extension OpenWearablesHealthSDK {
             userKey: userKey(),
             payloadPath: payloadURL.path,
             anchorPath: anchorsURL?.path,
-            wasFullExport: wasFullExport
+            wasFullExport: wasFullExport,
+            syncManifest: syncManifest
         )
         let itemURL = newPath("combined_item_\(id)", ext: "json")
         if let md = try? JSONEncoder().encode(item) {
@@ -90,6 +100,7 @@ extension OpenWearablesHealthSDK {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyAuth(to: &req, credential: credential)
+        applySyncManifest(syncManifest, to: &req)
         req.httpBody = payloadData
         req.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
         
@@ -104,7 +115,6 @@ extension OpenWearablesHealthSDK {
                     self.logMessage("Upload error: \(error.localizedDescription)")
                     self.markNetworkError()
                 }
-                try? FileManager.default.removeItem(atPath: payloadURL.path)
                 completion(false)
                 return
             }
@@ -125,6 +135,7 @@ extension OpenWearablesHealthSDK {
                         payloadPath: payloadURL.path,
                         anchorsPath: anchorsURL?.path,
                         wasFullExport: wasFullExport,
+                        syncManifest: syncManifest,
                         completion: completion
                     )
                 } else {
@@ -134,11 +145,11 @@ extension OpenWearablesHealthSDK {
                         errorMsg += " - \(truncated)"
                     }
                     self.logMessage(errorMsg)
-                    try? FileManager.default.removeItem(atPath: payloadURL.path)
                     
                     if (400...499).contains(httpResponse.statusCode) {
-                        self.logMessage("Skipping chunk due to \(httpResponse.statusCode) - continuing sync")
-                        completion(true)
+                        self.logMessage("Rejecting chunk due to \(httpResponse.statusCode) - sync remains incomplete")
+                        self.discardOutboxItem(itemPath: itemURL.path, payloadPath: payloadURL.path, anchorPath: anchorsURL?.path)
+                        completion(false)
                     } else {
                         completion(false)
                     }
@@ -146,7 +157,6 @@ extension OpenWearablesHealthSDK {
             } else {
                 self.logMessage("No HTTP response")
                 self.markNetworkError()
-                try? FileManager.default.removeItem(atPath: payloadURL.path)
                 completion(false)
             }
         }
@@ -162,12 +172,12 @@ extension OpenWearablesHealthSDK {
         payloadPath: String,
         anchorsPath: String?,
         wasFullExport: Bool,
+        syncManifest: SyncUploadManifest?,
         completion: @escaping (Bool) -> Void
     ) {
         if isApiKeyAuth {
             self.logMessage("Got 401 with apiKey auth")
             self.emitAuthError(statusCode: 401)
-            try? FileManager.default.removeItem(atPath: payloadPath)
             completion(false)
             return
         }
@@ -181,7 +191,6 @@ extension OpenWearablesHealthSDK {
             case .success:
                 guard let newCredential = self.authCredential else {
                     self.logMessage("Token refreshed but no credential available")
-                    try? FileManager.default.removeItem(atPath: payloadPath)
                     completion(false)
                     return
                 }
@@ -191,6 +200,7 @@ extension OpenWearablesHealthSDK {
                 retryReq.httpMethod = "POST"
                 retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 self.applyAuth(to: &retryReq, credential: newCredential)
+                self.applySyncManifest(syncManifest, to: &retryReq)
                 retryReq.httpBody = payloadData
                 retryReq.setValue("\(payloadData.count)", forHTTPHeaderField: "Content-Length")
                 
@@ -199,7 +209,6 @@ extension OpenWearablesHealthSDK {
                     
                     if let retryError = retryError {
                         self.logMessage("Retry failed: \(retryError.localizedDescription)")
-                        try? FileManager.default.removeItem(atPath: payloadPath)
                         completion(false)
                         return
                     }
@@ -215,7 +224,6 @@ extension OpenWearablesHealthSDK {
                         if (401...403).contains(retryStatus) {
                             self.emitAuthError(statusCode: retryStatus)
                         }
-                        try? FileManager.default.removeItem(atPath: payloadPath)
                         completion(false)
                     }
                 }
@@ -224,13 +232,11 @@ extension OpenWearablesHealthSDK {
             case .authFailure:
                 self.logMessage("Token refresh rejected - auth is invalid")
                 self.emitAuthError(statusCode: 401)
-                try? FileManager.default.removeItem(atPath: payloadPath)
                 completion(false)
                 
             case .networkError:
                 self.logMessage("Token refresh failed (network) - will retry later")
                 self.markNetworkError()
-                try? FileManager.default.removeItem(atPath: payloadPath)
                 completion(false)
             }
         }
@@ -268,8 +274,40 @@ extension OpenWearablesHealthSDK {
             defaults.synchronize()
             logMessage("Marked full export complete")
         }
+
+        if let manifest = item.syncManifest {
+            var itemCount = 0
+            if !manifest.isFinal,
+               let payloadData = try? Data(contentsOf: URL(fileURLWithPath: item.payloadPath)),
+               let payload = try? JSONSerialization.jsonObject(with: payloadData) as? [String: Any] {
+                itemCount = submittedItemCount(in: payload)
+            }
+            markSyncUploadAccepted(manifest, submittedItemCount: itemCount)
+            if manifest.isFinal {
+                logMessage("Whole sync accepted: \(manifest.clientSyncId), \(manifest.totalItems ?? 0) samples, \(manifest.chunkIndex) data chunks")
+                finalizeSyncState()
+            }
+        }
         
         try? FileManager.default.removeItem(atPath: itemPath)
+    }
+
+    internal func applySyncManifest(_ manifest: SyncUploadManifest?, to request: inout URLRequest) {
+        guard let manifest else { return }
+        request.setValue(manifest.clientSyncId, forHTTPHeaderField: "X-OW-Client-Sync-ID")
+        request.setValue(String(manifest.chunkIndex), forHTTPHeaderField: "X-OW-Client-Sync-Chunk-Index")
+        request.setValue(manifest.isFinal ? "true" : "false", forHTTPHeaderField: "X-OW-Client-Sync-Final")
+        if let totalItems = manifest.totalItems {
+            request.setValue(String(totalItems), forHTTPHeaderField: "X-OW-Client-Sync-Total-Items")
+        }
+    }
+
+    private func discardOutboxItem(itemPath: String, payloadPath: String, anchorPath: String?) {
+        try? FileManager.default.removeItem(atPath: itemPath)
+        try? FileManager.default.removeItem(atPath: payloadPath)
+        if let anchorPath {
+            try? FileManager.default.removeItem(atPath: anchorPath)
+        }
     }
 
     // MARK: - Clear outbox
@@ -374,6 +412,7 @@ extension OpenWearablesHealthSDK {
                 req.httpMethod = "POST"
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 self.applyAuth(to: &req, credential: credential)
+                self.applySyncManifest(item.syncManifest, to: &req)
                 
                 let task = self.session.uploadTask(with: req, fromFile: payloadURL)
                 task.taskDescription = [itemURL.path, payloadURL.path, item.anchorPath ?? ""].joined(separator: "|")

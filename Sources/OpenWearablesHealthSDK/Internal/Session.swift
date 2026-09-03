@@ -15,6 +15,9 @@ struct SyncState: Codable {
     let userKey: String
     let fullExport: Bool
     let createdAt: Date
+    var clientSyncId: String?
+    var nextChunkIndex: Int?
+    var totalSubmittedItemCount: Int?
     
     var typeProgress: [String: TypeSyncProgress]
     var totalSentCount: Int
@@ -123,6 +126,9 @@ extension OpenWearablesHealthSDK {
             userKey: userKey(),
             fullExport: fullExport,
             createdAt: Date(),
+            clientSyncId: UUID().uuidString.lowercased(),
+            nextChunkIndex: 0,
+            totalSubmittedItemCount: 0,
             typeProgress: [:],
             totalSentCount: 0,
             completedTypes: [],
@@ -131,6 +137,54 @@ extension OpenWearablesHealthSDK {
         
         saveSyncState(state)
         return state
+    }
+
+    // MARK: - Whole-sync transport manifest
+
+    internal func currentSyncUploadManifest(isFinal: Bool) -> SyncUploadManifest? {
+        guard var state = loadSyncState() else { return nil }
+        var changed = false
+        if state.clientSyncId == nil {
+            state.clientSyncId = UUID().uuidString.lowercased()
+            changed = true
+        }
+        if state.nextChunkIndex == nil {
+            state.nextChunkIndex = 0
+            changed = true
+        }
+        if state.totalSubmittedItemCount == nil {
+            state.totalSubmittedItemCount = state.totalSentCount
+            changed = true
+        }
+        if changed {
+            saveSyncState(state)
+        }
+        guard let clientSyncId = state.clientSyncId,
+              let chunkIndex = state.nextChunkIndex else { return nil }
+        return SyncUploadManifest(
+            clientSyncId: clientSyncId,
+            chunkIndex: chunkIndex,
+            isFinal: isFinal,
+            totalItems: isFinal ? state.totalSubmittedItemCount : nil
+        )
+    }
+
+    internal func markSyncUploadAccepted(_ manifest: SyncUploadManifest, submittedItemCount: Int) {
+        guard var state = loadSyncState(),
+              state.clientSyncId == manifest.clientSyncId else { return }
+        let currentIndex = state.nextChunkIndex ?? 0
+        if currentIndex == manifest.chunkIndex {
+            state.nextChunkIndex = currentIndex + 1
+            state.totalSubmittedItemCount = (state.totalSubmittedItemCount ?? state.totalSentCount) + submittedItemCount
+            saveSyncState(state)
+        }
+    }
+
+    internal func submittedItemCount(in payload: [String: Any]) -> Int {
+        guard let data = payload["data"] as? [String: Any] else { return 0 }
+        return ["records", "workouts", "sleep"].reduce(0) { count, key in
+            count + ((data[key] as? [Any])?.count ?? 0)
+        }
     }
     
     // MARK: - Finalize Sync (mark complete)
@@ -200,6 +254,9 @@ extension OpenWearablesHealthSDK {
                 "isFullExport": state.fullExport,
                 "initialExportDone": initialExportDone,
                 "isSyncing": isSyncInProgress,
+                "clientSyncId": state.clientSyncId ?? NSNull(),
+                "nextChunkIndex": state.nextChunkIndex ?? 0,
+                "submittedItemCount": state.totalSubmittedItemCount ?? state.totalSentCount,
                 "createdAt": ISO8601DateFormatter().string(from: state.createdAt)
             ]
         } else {
@@ -210,6 +267,9 @@ extension OpenWearablesHealthSDK {
                 "isFullExport": false,
                 "initialExportDone": initialExportDone,
                 "isSyncing": isSyncInProgress,
+                "clientSyncId": NSNull(),
+                "nextChunkIndex": 0,
+                "submittedItemCount": 0,
                 "createdAt": NSNull()
             ]
         }

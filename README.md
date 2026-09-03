@@ -6,6 +6,8 @@ Native iOS SDK for secure background health data synchronization from Apple Heal
 
 - Streaming sync with memory-efficient processing
 - Resumable sync sessions (survives app restarts)
+- Whole-sync completion manifests: one durable ID across every upload request,
+  followed by an exact-count final marker
 - Dual authentication: token-based (with auto-refresh) or API key
 - Background execution via HealthKit observer queries and BGTaskScheduler
 - Automatic retry with persistent outbox
@@ -90,6 +92,12 @@ sdk.stopBackgroundSync()
 // Sign out
 sdk.signOut()
 ```
+
+Each sync run automatically sends `X-OW-Client-Sync-ID`, a zero-based chunk
+index, and a final marker. A request index advances only after HTTP 2xx and is
+reused for an identical retry. Consumers can therefore treat OW's matching
+`sync.completed` event as proof that every request in the run was processed and
+that the declared, received, and processed item totals agree.
 
 ## AppDelegate Setup
 
