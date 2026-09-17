@@ -92,6 +92,56 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         )
     }
 
+    func testWomensHealthTypesMapToHealthKit() {
+        XCTAssertEqual(
+            HealthDataType.basalBodyTemperature.toHKSampleType()?.identifier,
+            HKQuantityTypeIdentifier.basalBodyTemperature.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.intermenstrualBleeding.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.intermenstrualBleeding.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.progesteroneTestResult.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.progesteroneTestResult.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.contraceptive.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.contraceptive.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.pregnancy.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.pregnancy.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.pregnancyTestResult.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.pregnancyTestResult.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.lactation.toHKSampleType()?.identifier,
+            HKCategoryTypeIdentifier.lactation.rawValue
+        )
+
+        if #available(iOS 16.0, *) {
+            XCTAssertEqual(
+                HealthDataType.infrequentMenstrualCycles.toHKSampleType()?.identifier,
+                HKCategoryTypeIdentifier.infrequentMenstrualCycles.rawValue
+            )
+            XCTAssertEqual(
+                HealthDataType.irregularMenstrualCycles.toHKSampleType()?.identifier,
+                HKCategoryTypeIdentifier.irregularMenstrualCycles.rawValue
+            )
+            XCTAssertEqual(
+                HealthDataType.persistentIntermenstrualBleeding.toHKSampleType()?.identifier,
+                HKCategoryTypeIdentifier.persistentIntermenstrualBleeding.rawValue
+            )
+            XCTAssertEqual(
+                HealthDataType.prolongedMenstrualPeriods.toHKSampleType()?.identifier,
+                HKCategoryTypeIdentifier.prolongedMenstrualPeriods.rawValue
+            )
+        }
+    }
+
     func testCyclingTypesMapToHealthKit() {
         XCTAssertEqual(HealthDataType.cyclingPower.rawValue, "cyclingPower")
         XCTAssertEqual(HealthDataType.cyclingCadence.rawValue, "cyclingCadence")

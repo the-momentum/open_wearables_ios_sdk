@@ -56,9 +56,20 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     
     // Reproductive Health
     case menstrualFlow
+    case intermenstrualBleeding
+    case infrequentMenstrualCycles
+    case irregularMenstrualCycles
+    case persistentIntermenstrualBleeding
+    case prolongedMenstrualPeriods
     case cervicalMucusQuality
     case ovulationTestResult
+    case progesteroneTestResult
     case sexualActivity
+    case contraceptive
+    case pregnancy
+    case pregnancyTestResult
+    case lactation
+    case basalBodyTemperature
     
     // Nutrition
     case dietaryEnergyConsumed
@@ -163,12 +174,46 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.categoryType(forIdentifier: .mindfulSession)
         case .menstrualFlow:
             return HKObjectType.categoryType(forIdentifier: .menstrualFlow)
+        case .intermenstrualBleeding:
+            return HKObjectType.categoryType(forIdentifier: .intermenstrualBleeding)
+        case .infrequentMenstrualCycles:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.categoryType(forIdentifier: .infrequentMenstrualCycles)
+            }
+            return nil
+        case .irregularMenstrualCycles:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.categoryType(forIdentifier: .irregularMenstrualCycles)
+            }
+            return nil
+        case .persistentIntermenstrualBleeding:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.categoryType(forIdentifier: .persistentIntermenstrualBleeding)
+            }
+            return nil
+        case .prolongedMenstrualPeriods:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.categoryType(forIdentifier: .prolongedMenstrualPeriods)
+            }
+            return nil
         case .cervicalMucusQuality:
             return HKObjectType.categoryType(forIdentifier: .cervicalMucusQuality)
         case .ovulationTestResult:
             return HKObjectType.categoryType(forIdentifier: .ovulationTestResult)
+        case .progesteroneTestResult:
+            return HKObjectType.categoryType(forIdentifier: .progesteroneTestResult)
         case .sexualActivity:
             return HKObjectType.categoryType(forIdentifier: .sexualActivity)
+        case .contraceptive:
+            return HKObjectType.categoryType(forIdentifier: .contraceptive)
+        case .pregnancy:
+            return HKObjectType.categoryType(forIdentifier: .pregnancy)
+        case .pregnancyTestResult:
+            return HKObjectType.categoryType(forIdentifier: .pregnancyTestResult)
+        case .lactation:
+            return HKObjectType.categoryType(forIdentifier: .lactation)
+        case .basalBodyTemperature:
+            return HKObjectType.quantityType(forIdentifier: .basalBodyTemperature)
         case .dietaryEnergyConsumed:
             return HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)
         case .dietaryCarbohydrates:
@@ -329,7 +374,8 @@ extension OpenWearablesHealthSDK {
         case HKObjectType.quantityType(forIdentifier: .bodyMass),
              HKObjectType.quantityType(forIdentifier: .height):
             return .meter()
-        case HKObjectType.quantityType(forIdentifier: .bodyTemperature):
+        case HKObjectType.quantityType(forIdentifier: .bodyTemperature),
+             HKObjectType.quantityType(forIdentifier: .basalBodyTemperature):
             return .degreeCelsius()
         case HKObjectType.quantityType(forIdentifier: .oxygenSaturation):
             return HKUnit.percent()
@@ -412,7 +458,8 @@ extension OpenWearablesHealthSDK {
             return (.gramUnit(with: .kilo), "kg")
         case HKObjectType.quantityType(forIdentifier: .waistCircumference):
             return (.meter(), "m")
-        case HKObjectType.quantityType(forIdentifier: .bodyTemperature):
+        case HKObjectType.quantityType(forIdentifier: .bodyTemperature),
+             HKObjectType.quantityType(forIdentifier: .basalBodyTemperature):
             return (.degreeCelsius(), "degC")
         case HKObjectType.quantityType(forIdentifier: .oxygenSaturation):
             return (HKUnit.percent(), "%")
