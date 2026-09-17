@@ -92,6 +92,22 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         )
     }
 
+    func testDietaryTypesMapToHealthKitQuantityIdentifiers() {
+        let dietary = HealthDataType.allCases.filter { $0.rawValue.hasPrefix("dietary") }
+        XCTAssertEqual(dietary.count, 39)
+
+        for type in dietary {
+            guard let sample = type.toHKSampleType() else {
+                XCTFail("\(type.rawValue) did not map to a HealthKit type")
+                continue
+            }
+            XCTAssertEqual(
+                sample.identifier,
+                "HKQuantityTypeIdentifier" + type.rawValue.prefix(1).uppercased() + type.rawValue.dropFirst()
+            )
+        }
+    }
+
     func testCyclingTypesMapToHealthKit() {
         XCTAssertEqual(HealthDataType.cyclingPower.rawValue, "cyclingPower")
         XCTAssertEqual(HealthDataType.cyclingCadence.rawValue, "cyclingCadence")

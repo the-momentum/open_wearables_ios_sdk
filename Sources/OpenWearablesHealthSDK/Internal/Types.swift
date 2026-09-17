@@ -60,11 +60,45 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case ovulationTestResult
     case sexualActivity
     
-    // Nutrition
+    // Nutrition — HealthKit dietary quantity types (all 39)
     case dietaryEnergyConsumed
     case dietaryCarbohydrates
+    case dietaryFiber
+    case dietarySugar
     case dietaryProtein
     case dietaryFatTotal
+    case dietaryFatSaturated
+    case dietaryFatMonounsaturated
+    case dietaryFatPolyunsaturated
+    case dietaryCholesterol
+    case dietarySodium
+    case dietaryPotassium
+    case dietaryChloride
+    case dietaryCaffeine
+    case dietaryCalcium
+    case dietaryIron
+    case dietaryMagnesium
+    case dietaryPhosphorus
+    case dietaryVitaminA
+    case dietaryVitaminB6
+    case dietaryVitaminB12
+    case dietaryVitaminC
+    case dietaryVitaminD
+    case dietaryVitaminE
+    case dietaryVitaminK
+    case dietaryThiamin
+    case dietaryRiboflavin
+    case dietaryNiacin
+    case dietaryFolate
+    case dietaryBiotin
+    case dietaryPantothenicAcid
+    case dietaryZinc
+    case dietaryCopper
+    case dietaryManganese
+    case dietarySelenium
+    case dietaryChromium
+    case dietaryMolybdenum
+    case dietaryIodine
     case dietaryWater
     
     // Running Dynamics (iOS 16.0+) — sensor-derived, not computable from distance/steps
@@ -173,10 +207,78 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)
         case .dietaryCarbohydrates:
             return HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates)
+        case .dietaryFiber:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFiber)
+        case .dietarySugar:
+            return HKObjectType.quantityType(forIdentifier: .dietarySugar)
         case .dietaryProtein:
             return HKObjectType.quantityType(forIdentifier: .dietaryProtein)
         case .dietaryFatTotal:
             return HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)
+        case .dietaryFatSaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated)
+        case .dietaryFatMonounsaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated)
+        case .dietaryFatPolyunsaturated:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)
+        case .dietaryCholesterol:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)
+        case .dietarySodium:
+            return HKObjectType.quantityType(forIdentifier: .dietarySodium)
+        case .dietaryPotassium:
+            return HKObjectType.quantityType(forIdentifier: .dietaryPotassium)
+        case .dietaryChloride:
+            return HKObjectType.quantityType(forIdentifier: .dietaryChloride)
+        case .dietaryCaffeine:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
+        case .dietaryCalcium:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCalcium)
+        case .dietaryIron:
+            return HKObjectType.quantityType(forIdentifier: .dietaryIron)
+        case .dietaryMagnesium:
+            return HKObjectType.quantityType(forIdentifier: .dietaryMagnesium)
+        case .dietaryPhosphorus:
+            return HKObjectType.quantityType(forIdentifier: .dietaryPhosphorus)
+        case .dietaryVitaminA:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminA)
+        case .dietaryVitaminB6:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB6)
+        case .dietaryVitaminB12:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminB12)
+        case .dietaryVitaminC:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminC)
+        case .dietaryVitaminD:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminD)
+        case .dietaryVitaminE:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminE)
+        case .dietaryVitaminK:
+            return HKObjectType.quantityType(forIdentifier: .dietaryVitaminK)
+        case .dietaryThiamin:
+            return HKObjectType.quantityType(forIdentifier: .dietaryThiamin)
+        case .dietaryRiboflavin:
+            return HKObjectType.quantityType(forIdentifier: .dietaryRiboflavin)
+        case .dietaryNiacin:
+            return HKObjectType.quantityType(forIdentifier: .dietaryNiacin)
+        case .dietaryFolate:
+            return HKObjectType.quantityType(forIdentifier: .dietaryFolate)
+        case .dietaryBiotin:
+            return HKObjectType.quantityType(forIdentifier: .dietaryBiotin)
+        case .dietaryPantothenicAcid:
+            return HKObjectType.quantityType(forIdentifier: .dietaryPantothenicAcid)
+        case .dietaryZinc:
+            return HKObjectType.quantityType(forIdentifier: .dietaryZinc)
+        case .dietaryCopper:
+            return HKObjectType.quantityType(forIdentifier: .dietaryCopper)
+        case .dietaryManganese:
+            return HKObjectType.quantityType(forIdentifier: .dietaryManganese)
+        case .dietarySelenium:
+            return HKObjectType.quantityType(forIdentifier: .dietarySelenium)
+        case .dietaryChromium:
+            return HKObjectType.quantityType(forIdentifier: .dietaryChromium)
+        case .dietaryMolybdenum:
+            return HKObjectType.quantityType(forIdentifier: .dietaryMolybdenum)
+        case .dietaryIodine:
+            return HKObjectType.quantityType(forIdentifier: .dietaryIodine)
         case .dietaryWater:
             return HKObjectType.quantityType(forIdentifier: .dietaryWater)
         case .runningPower:
@@ -316,6 +418,61 @@ extension OpenWearablesHealthSDK {
 
     // MARK: - Units / helpers
 
+    /// Units HealthKit accepts for dietary quantities, as on a nutrition label.
+    /// Energy keeps `Cal` for the type already shipped; the rest are g / mg / mcg / L.
+    private func _dietaryUnit(for qt: HKQuantityType) -> (HKUnit, String)? {
+        let mg = HKUnit.gramUnit(with: .milli)
+        let mcg = HKUnit.gramUnit(with: .micro)
+        switch qt {
+        case HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed):
+            return (.kilocalorie(), "Cal")
+        case HKObjectType.quantityType(forIdentifier: .dietaryWater):
+            return (.liter(), "L")
+        case HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates),
+             HKObjectType.quantityType(forIdentifier: .dietaryFiber),
+             HKObjectType.quantityType(forIdentifier: .dietarySugar),
+             HKObjectType.quantityType(forIdentifier: .dietaryProtein),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatTotal),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatSaturated),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatMonounsaturated),
+             HKObjectType.quantityType(forIdentifier: .dietaryFatPolyunsaturated):
+            return (.gram(), "g")
+        case HKObjectType.quantityType(forIdentifier: .dietaryCholesterol),
+             HKObjectType.quantityType(forIdentifier: .dietarySodium),
+             HKObjectType.quantityType(forIdentifier: .dietaryPotassium),
+             HKObjectType.quantityType(forIdentifier: .dietaryChloride),
+             HKObjectType.quantityType(forIdentifier: .dietaryCaffeine),
+             HKObjectType.quantityType(forIdentifier: .dietaryCalcium),
+             HKObjectType.quantityType(forIdentifier: .dietaryIron),
+             HKObjectType.quantityType(forIdentifier: .dietaryMagnesium),
+             HKObjectType.quantityType(forIdentifier: .dietaryPhosphorus),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminB6),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminC),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminE),
+             HKObjectType.quantityType(forIdentifier: .dietaryThiamin),
+             HKObjectType.quantityType(forIdentifier: .dietaryRiboflavin),
+             HKObjectType.quantityType(forIdentifier: .dietaryNiacin),
+             HKObjectType.quantityType(forIdentifier: .dietaryPantothenicAcid),
+             HKObjectType.quantityType(forIdentifier: .dietaryZinc),
+             HKObjectType.quantityType(forIdentifier: .dietaryCopper),
+             HKObjectType.quantityType(forIdentifier: .dietaryManganese):
+            return (mg, "mg")
+        case HKObjectType.quantityType(forIdentifier: .dietaryVitaminA),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminB12),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminD),
+             HKObjectType.quantityType(forIdentifier: .dietaryVitaminK),
+             HKObjectType.quantityType(forIdentifier: .dietaryFolate),
+             HKObjectType.quantityType(forIdentifier: .dietaryBiotin),
+             HKObjectType.quantityType(forIdentifier: .dietarySelenium),
+             HKObjectType.quantityType(forIdentifier: .dietaryChromium),
+             HKObjectType.quantityType(forIdentifier: .dietaryMolybdenum),
+             HKObjectType.quantityType(forIdentifier: .dietaryIodine):
+            return (mcg, "mcg")
+        default:
+            return nil
+        }
+    }
+
     private func _getFallbackUnit(for qt: HKQuantityType) -> HKUnit {
         switch qt {
         case HKObjectType.quantityType(forIdentifier: .stepCount):
@@ -339,6 +496,9 @@ extension OpenWearablesHealthSDK {
              HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic):
             return HKUnit.millimeterOfMercury()
         default:
+            if let unit = _dietaryUnit(for: qt)?.0 {
+                return unit
+            }
             if #available(iOS 16.0, *) {
                 if qt == HKObjectType.quantityType(forIdentifier: .runningPower) {
                     return .watt()
@@ -431,13 +591,10 @@ extension OpenWearablesHealthSDK {
             return (vo2Unit, "mL/kg/min")
         case HKObjectType.quantityType(forIdentifier: .flightsClimbed):
             return (.count(), "count")
-        case HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates),
-             HKObjectType.quantityType(forIdentifier: .dietaryProtein),
-             HKObjectType.quantityType(forIdentifier: .dietaryFatTotal):
-            return (.gram(), "g")
-        case HKObjectType.quantityType(forIdentifier: .dietaryWater):
-            return (.liter(), "L")
         default:
+            if let dietary = _dietaryUnit(for: qt) {
+                return dietary
+            }
             if #available(iOS 16.0, *) {
                 if qt == HKObjectType.quantityType(forIdentifier: .runningPower) {
                     return (.watt(), "W")
