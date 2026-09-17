@@ -30,6 +30,7 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case heartRate
     case restingHeartRate
     case heartRateVariabilitySDNN
+    case heartRateRecoveryOneMinute
     case vo2Max
     case oxygenSaturation
     case respiratoryRate
@@ -121,6 +122,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .restingHeartRate)
         case .heartRateVariabilitySDNN:
             return HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
+        case .heartRateRecoveryOneMinute:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute)
+            }
+            return nil
         case .vo2Max:
             return HKObjectType.quantityType(forIdentifier: .vo2Max)
         case .oxygenSaturation, .bloodOxygen:
@@ -340,6 +346,9 @@ extension OpenWearablesHealthSDK {
             return HKUnit.millimeterOfMercury()
         default:
             if #available(iOS 16.0, *) {
+                if qt == HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute) {
+                    return .count()
+                }
                 if qt == HKObjectType.quantityType(forIdentifier: .runningPower) {
                     return .watt()
                 }
@@ -439,6 +448,11 @@ extension OpenWearablesHealthSDK {
             return (.liter(), "L")
         default:
             if #available(iOS 16.0, *) {
+                if qt == HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute) {
+                    // HealthKit stores the drop as a discrete count; Health and the rest of
+                    // our heart types expose that as bpm (peak HR minus HR at +1 min).
+                    return (.count(), "bpm")
+                }
                 if qt == HKObjectType.quantityType(forIdentifier: .runningPower) {
                     return (.watt(), "W")
                 }
