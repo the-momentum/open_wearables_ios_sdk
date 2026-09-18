@@ -100,6 +100,7 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case dietaryMolybdenum
     case dietaryIodine
     case dietaryWater
+    case food
     
     // Running Dynamics (iOS 16.0+) — sensor-derived, not computable from distance/steps
     case runningPower
@@ -281,6 +282,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .dietaryIodine)
         case .dietaryWater:
             return HKObjectType.quantityType(forIdentifier: .dietaryWater)
+        case .food:
+            return HKObjectType.correlationType(forIdentifier: .food)
         case .runningPower:
             if #available(iOS 16.0, *) {
                 return HKObjectType.quantityType(forIdentifier: .runningPower)
@@ -348,6 +351,7 @@ extension OpenWearablesHealthSDK {
         var sleep: [[String: Any]] = []
         
         let dateFormatter = ISO8601DateFormatter()
+        let foodChildIds = _foodChildIds(in: samples)
         
         let batchSize = 100
         for batchStart in stride(from: 0, to: samples.count, by: batchSize) {
@@ -359,6 +363,8 @@ extension OpenWearablesHealthSDK {
                     if let w = s as? HKWorkout {
                         workouts.append(_mapWorkoutEfficient(w, dateFormatter: dateFormatter))
                     } else if let q = s as? HKQuantitySample {
+                        // Already emitted as a child of HKCorrelationTypeFood in this round.
+                        if foodChildIds.contains(q.uuid) { continue }
                         records.append(_mapQuantityEfficient(q, dateFormatter: dateFormatter))
                     } else if let c = s as? HKCategorySample {
                         if c.categoryType.identifier == HKCategoryTypeIdentifier.sleepAnalysis.rawValue {
@@ -408,7 +414,15 @@ extension OpenWearablesHealthSDK {
     // MARK: - Type mapping
     
     internal func mapTypes(_ types: [HealthDataType]) -> [HKSampleType] {
-        return types.compactMap { $0.toHKSampleType() }
+        var mapped = types.compactMap { $0.toHKSampleType() }
+        // Dietary quantity types can belong to a food correlation. Always read that
+        // type as well so the parent record and parentId links can be built.
+        if types.contains(where: { $0.rawValue.hasPrefix("dietary") }),
+           let food = HKObjectType.correlationType(forIdentifier: .food),
+           !mapped.contains(where: { $0.identifier == food.identifier }) {
+            mapped.append(food)
+        }
+        return mapped
     }
     
     /// Legacy mapping from raw strings - used for restoring persisted types from Keychain.
@@ -721,7 +735,25 @@ extension OpenWearablesHealthSDK {
     
     // MARK: - Memory-efficient mappers
     
-    private func _mapQuantityEfficient(_ q: HKQuantitySample, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
+    private func _foodChildIds(in samples: [HKSample]) -> Set<UUID> {
+        var ids = Set<UUID>()
+        for sample in samples {
+            guard let corr = sample as? HKCorrelation,
+                  corr.correlationType.identifier == HKCorrelationTypeIdentifier.food.rawValue else {
+                continue
+            }
+            for object in corr.objects {
+                ids.insert(object.uuid)
+            }
+        }
+        return ids
+    }
+
+    private func _mapQuantityEfficient(
+        _ q: HKQuantitySample,
+        dateFormatter: ISO8601DateFormatter,
+        parentId: Any = NSNull()
+    ) -> [String: Any] {
         let (unit, unitOut) = _defaultUnit(for: q.quantityType)
         
         var value: Double
@@ -749,7 +781,7 @@ extension OpenWearablesHealthSDK {
             "source": _mapSource(q.sourceRevision, device: q.device),
             "value": value,
             "unit": finalUnit,
-            "parentId": NSNull(),
+            "parentId": parentId,
             "metadata": _metadataDict(q.metadata)
         ]
     }
@@ -784,6 +816,10 @@ extension OpenWearablesHealthSDK {
     }
 
     private func _mapCorrelationEfficient(_ corr: HKCorrelation, dateFormatter: ISO8601DateFormatter) -> [[String: Any]] {
+        if corr.correlationType.identifier == HKCorrelationTypeIdentifier.food.rawValue {
+            return _mapFoodCorrelation(corr, dateFormatter: dateFormatter)
+        }
+
         var records: [[String: Any]] = []
         let source = _mapSource(corr.sourceRevision, device: corr.device)
 
@@ -803,6 +839,31 @@ extension OpenWearablesHealthSDK {
                     "parentId": NSNull(),
                     "metadata": _metadataDict(q.metadata)
                 ])
+            }
+        }
+        return records
+    }
+
+    /// Food stays in `records[]`: one parent row for the correlation, then each
+    /// dietary child with `parentId` = the food UUID. Title / meal type stay in
+    /// metadata — HealthKit does not guarantee them.
+    private func _mapFoodCorrelation(_ corr: HKCorrelation, dateFormatter: ISO8601DateFormatter) -> [[String: Any]] {
+        var records: [[String: Any]] = [[
+            "id": corr.uuid.uuidString,
+            "type": corr.correlationType.identifier,
+            "startDate": dateFormatter.string(from: corr.startDate),
+            "endDate": dateFormatter.string(from: corr.endDate),
+            "zoneOffset": _zoneOffsetString(metadata: corr.metadata, date: corr.startDate),
+            "source": _mapSource(corr.sourceRevision, device: corr.device),
+            "value": 1,
+            "unit": NSNull(),
+            "parentId": NSNull(),
+            "metadata": _foodMetadataDict(corr.metadata)
+        ]]
+
+        for sample in corr.objects {
+            if let q = sample as? HKQuantitySample {
+                records.append(_mapQuantityEfficient(q, dateFormatter: dateFormatter, parentId: corr.uuid.uuidString))
             }
         }
         return records
@@ -1025,6 +1086,17 @@ extension OpenWearablesHealthSDK {
             result[k] = "\(v)"
         }
         return result
+    }
+
+    /// Food metadata uses stable payload keys: `title` (from `HKFoodType`) and `mealType`.
+    /// Neither is guaranteed by HealthKit — omit the key when the source left it out.
+    private func _foodMetadataDict(_ meta: [String: Any]?) -> Any {
+        guard var result = _metadataDict(meta) as? [String: Any] else { return NSNull() }
+        if result["title"] == nil, let foodType = result[HKMetadataKeyFoodType] {
+            result["title"] = foodType
+        }
+        result.removeValue(forKey: HKMetadataKeyFoodType)
+        return result.isEmpty ? NSNull() : result
     }
     
     // MARK: - Zone Offset
