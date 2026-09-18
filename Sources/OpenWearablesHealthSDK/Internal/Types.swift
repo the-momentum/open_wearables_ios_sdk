@@ -42,6 +42,9 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case leanBodyMass
     case waistCircumference
     case bodyTemperature
+    /// Overnight wrist-temperature samples recorded by Apple Watch (Series 8 and later, iOS 16+).
+    /// Distinct from `bodyTemperature`, which carries manual thermometer readings.
+    case appleSleepingWristTemperature
     
     // Blood & Metabolic
     case bloodGlucose
@@ -144,6 +147,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return nil
         case .bodyTemperature:
             return HKObjectType.quantityType(forIdentifier: .bodyTemperature)
+        case .appleSleepingWristTemperature:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+            }
+            return nil
         case .bloodGlucose:
             return HKObjectType.quantityType(forIdentifier: .bloodGlucose)
         case .insulinDelivery:
@@ -316,7 +324,22 @@ extension OpenWearablesHealthSDK {
 
     // MARK: - Units / helpers
 
+    /// Both temperature identifiers share a unit; `appleSleepingWristTemperature` is iOS 16+, so the
+    /// match is by identifier rather than by a `case` in the switches below.
+    private func _isTemperatureQuantityType(_ qt: HKQuantityType) -> Bool {
+        if qt.identifier == HKQuantityTypeIdentifier.bodyTemperature.rawValue {
+            return true
+        }
+        if #available(iOS 16.0, *) {
+            return qt.identifier == HKQuantityTypeIdentifier.appleSleepingWristTemperature.rawValue
+        }
+        return false
+    }
+
     private func _getFallbackUnit(for qt: HKQuantityType) -> HKUnit {
+        if _isTemperatureQuantityType(qt) {
+            return .degreeCelsius()
+        }
         switch qt {
         case HKObjectType.quantityType(forIdentifier: .stepCount):
             return .count()
@@ -373,6 +396,9 @@ extension OpenWearablesHealthSDK {
     }
 
     private func _defaultUnit(for qt: HKQuantityType) -> (HKUnit, String) {
+        if _isTemperatureQuantityType(qt) {
+            return (.degreeCelsius(), "degC")
+        }
         switch qt {
         case HKObjectType.quantityType(forIdentifier: .stepCount):
             return (.count(), "count")

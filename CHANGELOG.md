@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* **Apple sleeping wrist temperature** (#67): `appleSleepingWristTemperature` (iOS 16+) is now authorized and synced as a quantity sample in `degC`, so the overnight wrist-temperature record Apple Watch stores in the Health app reaches the backend instead of being invisible to the SDK. Only `bodyTemperature` (manual thermometer entries) existed in `HealthDataType` before, while the bedtime reading has its own HealthKit identifier. Because that identifier is iOS 16+ only, both temperature identifiers share a single unit path (`_isTemperatureQuantityType`) rather than living in the `case` lists of the unit switches. On iOS 15 the new case resolves to `nil` from `toHKSampleType()`, so authorization and sync skip it.
+
 ## 0.15.0
 
 * **Cycling power and cadence** (#44): authorize and sync `cyclingPower`, `cyclingCadence`, `cyclingSpeed`, and `cyclingFunctionalThresholdPower` (iOS 17+) as quantity samples — the same path as `heartRate` / `runningPower` — so Bluetooth power-meter timeseries and Apple Watch cycling workouts actually reach the backend. Workout-level averages for power, cadence and speed are populated from `HKWorkout` statistics.

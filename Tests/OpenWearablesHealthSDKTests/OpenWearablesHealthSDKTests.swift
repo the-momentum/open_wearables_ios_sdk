@@ -118,6 +118,27 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         }
     }
 
+    func testAppleSleepingWristTemperatureMapsToHealthKit() {
+        XCTAssertEqual(
+            HealthDataType.appleSleepingWristTemperature.rawValue,
+            "appleSleepingWristTemperature"
+        )
+
+        if #available(iOS 16.0, *) {
+            XCTAssertEqual(
+                HealthDataType.appleSleepingWristTemperature.toHKSampleType()?.identifier,
+                HKQuantityTypeIdentifier.appleSleepingWristTemperature.rawValue
+            )
+            // The overnight reading must not collapse into the manual thermometer type.
+            XCTAssertNotEqual(
+                HealthDataType.appleSleepingWristTemperature.toHKSampleType()?.identifier,
+                HKQuantityTypeIdentifier.bodyTemperature.rawValue
+            )
+        } else {
+            XCTAssertNil(HealthDataType.appleSleepingWristTemperature.toHKSampleType())
+        }
+    }
+
     func testRunningDynamicsTypesMapToHealthKit() {
         XCTAssertEqual(HealthDataType.runningPower.rawValue, "runningPower")
         XCTAssertEqual(HealthDataType.runningVerticalOscillation.rawValue, "runningVerticalOscillation")
