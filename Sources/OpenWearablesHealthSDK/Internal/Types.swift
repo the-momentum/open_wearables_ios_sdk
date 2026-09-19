@@ -25,6 +25,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case sixMinuteWalkTestDistance
     case activeEnergy
     case basalEnergy
+    /// Minutes Apple Watch counted toward the Exercise ring (iOS 9.3+).
+    case appleExerciseTime
     
     // Heart & Cardiovascular
     case heartRate
@@ -33,6 +35,10 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case vo2Max
     case oxygenSaturation
     case respiratoryRate
+    /// Average heart rate while walking, one sample per day (iOS 11+).
+    case walkingHeartRateAverage
+    /// Heart rate drop one minute after a workout ends (iOS 16+).
+    case heartRateRecoveryOneMinute
     
     // Body Measurements
     case bodyMass
@@ -53,6 +59,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     // Sleep & Mindfulness
     case sleep
     case mindfulSession
+    /// Nightly breathing disturbances Apple derives from the sleep session (iOS 18+).
+    case appleSleepingBreathingDisturbances
     
     // Reproductive Health
     case menstrualFlow
@@ -84,6 +92,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     // Workout Effort (iOS 18.0+ / watchOS 11.0+)
     case workoutEffortScore
     case estimatedWorkoutEffortScore
+    /// Metabolic intensity Apple estimates during a workout, in kcal/(hr·kg) (iOS 17.0+).
+    case physicalEffort
 
     // Aliases (alternative names for the same underlying type)
     case restingEnergy
@@ -115,6 +125,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)
         case .basalEnergy, .restingEnergy:
             return HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)
+        case .appleExerciseTime:
+            return HKObjectType.quantityType(forIdentifier: .appleExerciseTime)
         case .heartRate:
             return HKObjectType.quantityType(forIdentifier: .heartRate)
         case .restingHeartRate:
@@ -127,6 +139,13 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .oxygenSaturation)
         case .respiratoryRate:
             return HKObjectType.quantityType(forIdentifier: .respiratoryRate)
+        case .walkingHeartRateAverage:
+            return HKObjectType.quantityType(forIdentifier: .walkingHeartRateAverage)
+        case .heartRateRecoveryOneMinute:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute)
+            }
+            return nil
         case .bodyMass:
             return HKObjectType.quantityType(forIdentifier: .bodyMass)
         case .height:
@@ -144,6 +163,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return nil
         case .bodyTemperature:
             return HKObjectType.quantityType(forIdentifier: .bodyTemperature)
+        case .appleSleepingBreathingDisturbances:
+            if #available(iOS 18.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .appleSleepingBreathingDisturbances)
+            }
+            return nil
         case .bloodGlucose:
             return HKObjectType.quantityType(forIdentifier: .bloodGlucose)
         case .insulinDelivery:
@@ -224,6 +248,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
         case .estimatedWorkoutEffortScore:
             if #available(iOS 18.0, watchOS 11.0, *) {
                 return HKObjectType.quantityType(forIdentifier: .estimatedWorkoutEffortScore)
+            }
+            return nil
+        case .physicalEffort:
+            if #available(iOS 17.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .physicalEffort)
             }
             return nil
         }
@@ -380,6 +409,10 @@ extension OpenWearablesHealthSDK {
             return (.count().unitDivided(by: .minute()), "bpm")
         case HKObjectType.quantityType(forIdentifier: .restingHeartRate):
             return (.count().unitDivided(by: .minute()), "bpm")
+        case HKObjectType.quantityType(forIdentifier: .walkingHeartRateAverage):
+            return (.count().unitDivided(by: .minute()), "bpm")
+        case HKObjectType.quantityType(forIdentifier: .appleExerciseTime):
+            return (.minute(), "min")
         case HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN):
             return (.secondUnit(with: .milli), "ms")
         case HKObjectType.quantityType(forIdentifier: .basalEnergyBurned),
@@ -442,6 +475,9 @@ extension OpenWearablesHealthSDK {
                 if qt == HKObjectType.quantityType(forIdentifier: .runningPower) {
                     return (.watt(), "W")
                 }
+                if qt == HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute) {
+                    return (.count().unitDivided(by: .minute()), "bpm")
+                }
                 if qt == HKObjectType.quantityType(forIdentifier: .runningVerticalOscillation) {
                     return (.meterUnit(with: .centi), "cm")
                 }
@@ -460,11 +496,20 @@ extension OpenWearablesHealthSDK {
                 if qt == HKObjectType.quantityType(forIdentifier: .cyclingSpeed) {
                     return (.meter().unitDivided(by: .second()), "m/s")
                 }
+                if qt == HKObjectType.quantityType(forIdentifier: .physicalEffort) {
+                    return (
+                        .kilocalorie().unitDivided(by: .hour()).unitDivided(by: .gramUnit(with: .kilo)),
+                        "kcal/hr/kg"
+                    )
+                }
             }
             if #available(iOS 18.0, *) {
                 if qt == HKObjectType.quantityType(forIdentifier: .workoutEffortScore)
                     || qt == HKObjectType.quantityType(forIdentifier: .estimatedWorkoutEffortScore) {
                     return (.appleEffortScore(), "appleEffortScore")
+                }
+                if qt == HKObjectType.quantityType(forIdentifier: .appleSleepingBreathingDisturbances) {
+                    return (.count(), "count")
                 }
             }
             return (.count(), "count")

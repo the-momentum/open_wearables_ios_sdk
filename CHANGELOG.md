@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* **Activity, recovery and effort types**: authorize and sync `appleExerciseTime`, `walkingHeartRateAverage`, `heartRateRecoveryOneMinute`, `physicalEffort` and `appleSleepingBreathingDisturbances`. The backend already maps all five identifiers to a `SeriesType` and lists Apple as a supporting provider for them (`docs/providers/coverage.mdx`), but no Apple client ever sent them, because the type was not in `HealthDataType` and was therefore never authorized, queried or uploaded. Each new case carries the unit the sample is read in (`min` for exercise time, `bpm` for the two heart rate types, `kcal/hr/kg` for physical effort, `count` for breathing disturbances) and an `#available` gate where Apple added the identifier later: iOS 16 for heart rate recovery, iOS 17 for physical effort, iOS 18 for breathing disturbances. Below the gate the case resolves to `nil`, so authorization and sync skip it.
+
 ## 0.15.0
 
 * **Cycling power and cadence** (#44): authorize and sync `cyclingPower`, `cyclingCadence`, `cyclingSpeed`, and `cyclingFunctionalThresholdPower` (iOS 17+) as quantity samples — the same path as `heartRate` / `runningPower` — so Bluetooth power-meter timeseries and Apple Watch cycling workouts actually reach the backend. Workout-level averages for power, cadence and speed are populated from `HKWorkout` statistics.
