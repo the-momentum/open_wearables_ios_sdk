@@ -30,6 +30,7 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case heartRate
     case restingHeartRate
     case heartRateVariabilitySDNN
+    case heartRateVariabilityRMSSD // iOS 27.0+
     case vo2Max
     case oxygenSaturation
     case respiratoryRate
@@ -121,6 +122,15 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return HKObjectType.quantityType(forIdentifier: .restingHeartRate)
         case .heartRateVariabilitySDNN:
             return HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
+        case .heartRateVariabilityRMSSD:
+            // The identifier only exists in the iOS 27 SDK, so older Xcode versions
+            // compile this type out instead of failing the build.
+            #if compiler(>=6.4)
+            if #available(iOS 27.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .heartRateVariabilityRMSSD)
+            }
+            #endif
+            return nil
         case .vo2Max:
             return HKObjectType.quantityType(forIdentifier: .vo2Max)
         case .oxygenSaturation, .bloodOxygen:
@@ -368,6 +378,13 @@ extension OpenWearablesHealthSDK {
                     return .appleEffortScore()
                 }
             }
+            #if compiler(>=6.4)
+            if #available(iOS 27.0, *) {
+                if qt == HKObjectType.quantityType(forIdentifier: .heartRateVariabilityRMSSD) {
+                    return .secondUnit(with: .milli)
+                }
+            }
+            #endif
             return .count()
         }
     }
@@ -467,6 +484,13 @@ extension OpenWearablesHealthSDK {
                     return (.appleEffortScore(), "appleEffortScore")
                 }
             }
+            #if compiler(>=6.4)
+            if #available(iOS 27.0, *) {
+                if qt == HKObjectType.quantityType(forIdentifier: .heartRateVariabilityRMSSD) {
+                    return (.secondUnit(with: .milli), "ms")
+                }
+            }
+            #endif
             return (.count(), "count")
         }
     }

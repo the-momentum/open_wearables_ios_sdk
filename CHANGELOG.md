@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* **HRV RMSSD**: authorize and sync `heartRateVariabilityRMSSD` (iOS 27+) as a quantity sample in milliseconds, next to the existing `heartRateVariabilitySDNN`. HealthKit reports it as `HKQuantityTypeIdentifierHeartRateVariabilityRMSSD`. The type is compiled only with the iOS 27 SDK (Xcode 27), so the package still builds with older Xcode versions; there, and on devices below iOS 27, `toHKSampleType()` returns `nil` and the type is skipped during authorization and sync.
+
 ## 0.15.0
 
 * **Cycling power and cadence** (#44): authorize and sync `cyclingPower`, `cyclingCadence`, `cyclingSpeed`, and `cyclingFunctionalThresholdPower` (iOS 17+) as quantity samples — the same path as `heartRate` / `runningPower` — so Bluetooth power-meter timeseries and Apple Watch cycling workouts actually reach the backend. Workout-level averages for power, cadence and speed are populated from `HKWorkout` statistics.
