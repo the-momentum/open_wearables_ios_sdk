@@ -704,7 +704,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             return
         }
         
-        let readTypes = Set(getQueryableTypes())
+        let readTypes = Set(typesForAuthorization())
         logMessage("Requesting read-only auth for \(readTypes.count) types")
         
         healthStore.requestAuthorization(toShare: nil, read: readTypes) { ok, _ in
@@ -717,12 +717,27 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     }
     
     internal func getQueryableTypes() -> [HKSampleType] {
+        // Blood pressure is synced from the systolic and diastolic samples.
+        // Food stays here: the correlation is queried for the parent meal, but
+        // HealthKit refuses it in requestAuthorization (see typesForAuthorization).
         let disallowedIdentifiers: Set<String> = [
             HKCorrelationTypeIdentifier.bloodPressure.rawValue
         ]
         
         return trackedTypes.filter { type in
             !disallowedIdentifiers.contains(type.identifier)
+        }
+    }
+
+    /// Types safe to pass to `HKHealthStore.requestAuthorization`.
+    ///
+    /// `HKCorrelationTypeIdentifierFood` (and blood pressure, already dropped by
+    /// `getQueryableTypes`) cannot be authorized directly. HealthKit throws
+    /// `NSInvalidArgumentException` if they are in the read set. Read access to a
+    /// food correlation comes from the dietary quantity types it contains.
+    internal func typesForAuthorization() -> [HKSampleType] {
+        getQueryableTypes().filter { type in
+            type.identifier != HKCorrelationTypeIdentifier.food.rawValue
         }
     }
 

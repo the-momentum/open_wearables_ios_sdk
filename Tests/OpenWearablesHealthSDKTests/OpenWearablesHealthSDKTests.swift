@@ -92,6 +92,116 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         )
     }
 
+    func testDietaryTypesMapToHealthKitQuantityIdentifiers() {
+        let dietary = HealthDataType.allCases.filter { $0.rawValue.hasPrefix("dietary") }
+        XCTAssertEqual(dietary.count, 39)
+
+        for type in dietary {
+            guard let sample = type.toHKSampleType() else {
+                XCTFail("\(type.rawValue) did not map to a HealthKit type")
+                continue
+            }
+            XCTAssertEqual(
+                sample.identifier,
+                "HKQuantityTypeIdentifier" + type.rawValue.prefix(1).uppercased() + type.rawValue.dropFirst()
+            )
+        }
+    }
+
+    func testFoodTypeMapsToHealthKitCorrelation() {
+        XCTAssertEqual(HealthDataType.food.rawValue, "food")
+        XCTAssertEqual(
+            HealthDataType.food.toHKSampleType()?.identifier,
+            HKCorrelationTypeIdentifier.food.rawValue
+        )
+    }
+
+    func testMapTypesAddsFoodWhenDietaryTypesAreRequested() {
+        let mapped = OpenWearablesHealthSDK.shared.mapTypes([.dietaryProtein, .steps])
+        XCTAssertTrue(mapped.contains { $0.identifier == HKCorrelationTypeIdentifier.food.rawValue })
+        XCTAssertTrue(mapped.contains { $0.identifier == HKQuantityTypeIdentifier.dietaryProtein.rawValue })
+    }
+
+    func testAuthorizationOmitsFoodCorrelationButSyncStillQueriesIt() {
+        let sdk = OpenWearablesHealthSDK.shared
+        let previous = sdk.trackedTypes
+        defer { sdk.trackedTypes = previous }
+
+        sdk.trackedTypes = sdk.mapTypes([.dietaryEnergyConsumed, .steps, .bloodPressure])
+        let authorized = sdk.typesForAuthorization()
+
+        XCTAssertFalse(authorized.contains { $0.identifier == HKCorrelationTypeIdentifier.food.rawValue })
+        XCTAssertFalse(authorized.contains { $0.identifier == HKCorrelationTypeIdentifier.bloodPressure.rawValue })
+        XCTAssertTrue(authorized.contains { $0.identifier == HKQuantityTypeIdentifier.dietaryEnergyConsumed.rawValue })
+        XCTAssertTrue(sdk.getQueryableTypes().contains { $0.identifier == HKCorrelationTypeIdentifier.food.rawValue })
+    }
+
+    func testFoodCorrelationEmitsParentAndChildrenInRecords() {
+        let start = Date(timeIntervalSince1970: 1_779_163_200) // 2026-05-18-ish just a fixed date
+        let energyType = HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!
+        let proteinType = HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!
+        let caffeineType = HKQuantityType.quantityType(forIdentifier: .dietaryCaffeine)!
+
+        let energy = HKQuantitySample(
+            type: energyType,
+            quantity: HKQuantity(unit: .kilocalorie(), doubleValue: 550),
+            start: start,
+            end: start
+        )
+        let protein = HKQuantitySample(
+            type: proteinType,
+            quantity: HKQuantity(unit: .gram(), doubleValue: 38.2),
+            start: start,
+            end: start
+        )
+        let food = HKCorrelation(
+            type: HKObjectType.correlationType(forIdentifier: .food)!,
+            start: start,
+            end: start,
+            objects: [energy, protein],
+            metadata: [
+                HKMetadataKeyFoodType: "Kurczak z ryżem",
+                "mealType": "obiad"
+            ]
+        )
+        let caffeine = HKQuantitySample(
+            type: caffeineType,
+            quantity: HKQuantity(unit: HKUnit.gramUnit(with: .milli), doubleValue: 95),
+            start: start.addingTimeInterval(-10_800),
+            end: start.addingTimeInterval(-10_800)
+        )
+
+        let payload = OpenWearablesHealthSDK.shared.buildCombinedPayload(samples: [food, energy, caffeine])
+        let records = payload["data"] as? [String: Any]
+        let list = records?["records"] as? [[String: Any]] ?? []
+
+        let foodRow = list.first { $0["type"] as? String == HKCorrelationTypeIdentifier.food.rawValue }
+        XCTAssertNotNil(foodRow)
+        XCTAssertEqual(foodRow?["id"] as? String, food.uuid.uuidString)
+        XCTAssertEqual(foodRow?["value"] as? Int, 1)
+        XCTAssertTrue(foodRow?["unit"] is NSNull)
+        XCTAssertTrue(foodRow?["parentId"] is NSNull)
+        let meta = foodRow?["metadata"] as? [String: Any]
+        XCTAssertEqual(meta?["title"] as? String, "Kurczak z ryżem")
+        XCTAssertEqual(meta?["mealType"] as? String, "obiad")
+        XCTAssertNil(meta?[HKMetadataKeyFoodType])
+
+        let energyRow = list.first { $0["id"] as? String == energy.uuid.uuidString }
+        XCTAssertEqual(energyRow?["parentId"] as? String, food.uuid.uuidString)
+        XCTAssertEqual(energyRow?["type"] as? String, HKQuantityTypeIdentifier.dietaryEnergyConsumed.rawValue)
+        XCTAssertEqual(energyRow?["unit"] as? String, "Cal")
+
+        let proteinRow = list.first { $0["id"] as? String == protein.uuid.uuidString }
+        XCTAssertEqual(proteinRow?["parentId"] as? String, food.uuid.uuidString)
+
+        let caffeineRow = list.first { $0["id"] as? String == caffeine.uuid.uuidString }
+        XCTAssertTrue(caffeineRow?["parentId"] is NSNull)
+        XCTAssertEqual(caffeineRow?["unit"] as? String, "mg")
+
+        // The standalone energy sample is the same UUID as the food child — emit once.
+        XCTAssertEqual(list.filter { $0["id"] as? String == energy.uuid.uuidString }.count, 1)
+    }
+
     func testCyclingTypesMapToHealthKit() {
         XCTAssertEqual(HealthDataType.cyclingPower.rawValue, "cyclingPower")
         XCTAssertEqual(HealthDataType.cyclingCadence.rawValue, "cyclingCadence")
