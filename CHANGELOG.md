@@ -3,6 +3,7 @@
 ## Unreleased
 
 * **HRV RMSSD**: authorize and sync `heartRateVariabilityRMSSD` (iOS 27+) as a quantity sample in milliseconds, next to the existing `heartRateVariabilitySDNN`. HealthKit reports it as `HKQuantityTypeIdentifierHeartRateVariabilityRMSSD`. The type is compiled only with the iOS 27 SDK (Xcode 27), so the package still builds with older Xcode versions; there, and on devices below iOS 27, `toHKSampleType()` returns `nil` and the type is skipped during authorization and sync. Requires Open Wearables 0.10.0 or later (the-momentum/open-wearables#1750). Older versions accept the upload but silently drop RMSSD samples, and because the SDK advances its anchor they are not resent after the backend is upgraded unless `resetAnchors()` is called.
+* **Device fields for third-party writes** (#71): records written to HealthKit by another app (e.g. Oura) no longer report the iPhone that relayed them. `deviceModel` now comes from the writer's `HKDevice.model` and is `null` when the writer attaches no device, and `deviceType` is no longer inferred from the relaying iPhone's `productType`. Apple's own sources (`com.apple.health.*`) still report `productType`. `deviceId` stays `null`, as HealthKit exposes no stable device identifier.
 
 ## 0.15.0
 

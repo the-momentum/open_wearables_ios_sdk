@@ -845,15 +845,24 @@ extension OpenWearablesHealthSDK {
     
     // MARK: - Source mapper (unified format)
     
+    // Bundle id prefix of samples written by Apple's own devices (iPhone, Apple Watch)
+    private static let appleOwnSourcePrefix = "com.apple.health."
+
     private func _mapSource(_ sourceRevision: HKSourceRevision, device: HKDevice?) -> [String: Any] {
+        // productType is the hardware the writer app ran on. It names the producing device only for
+        // Apple's own sources; for a third-party writer (e.g. Oura) it is the relaying iPhone, so the
+        // model comes from the HKDevice the writer attached, if any.
+        let isAppleOwn = sourceRevision.source.bundleIdentifier.hasPrefix(Self.appleOwnSourcePrefix)
+        let productType = isAppleOwn ? sourceRevision.productType : nil
+        let deviceModel = isAppleOwn ? productType : device?.model
         var result: [String: Any] = [
             "appId": sourceRevision.source.bundleIdentifier,
             "name": sourceRevision.source.name,
             "deviceId": NSNull(),
             "deviceName": (device?.name) as Any? ?? NSNull(),
             "deviceManufacturer": (device?.manufacturer) as Any? ?? NSNull(),
-            "deviceModel": (sourceRevision.productType) as Any? ?? NSNull(),
-            "deviceType": _inferDeviceType(productType: sourceRevision.productType, device: device),
+            "deviceModel": deviceModel as Any? ?? NSNull(),
+            "deviceType": _inferDeviceType(productType: productType, device: device),
             "recordingMethod": NSNull()
         ]
 
