@@ -3,6 +3,7 @@
 ## Unreleased
 
 * **HRV RMSSD**: authorize and sync `heartRateVariabilityRMSSD` (iOS 27+) as a quantity sample in milliseconds, next to the existing `heartRateVariabilitySDNN`. HealthKit reports it as `HKQuantityTypeIdentifierHeartRateVariabilityRMSSD`. The type is compiled only with the iOS 27 SDK (Xcode 27), so the package still builds with older Xcode versions; there, and on devices below iOS 27, `toHKSampleType()` returns `nil` and the type is skipped during authorization and sync. Requires Open Wearables 0.10.0 or later (the-momentum/open-wearables#1750). Older versions accept the upload but silently drop RMSSD samples, and because the SDK advances its anchor they are not resent after the backend is upgraded unless `resetAnchors()` is called.
+* **Apple sleeping wrist temperature** (#67): `appleSleepingWristTemperature` (iOS 16+) is now authorized and synced as a quantity sample in `degC`, so the overnight wrist-temperature record Apple Watch stores in the Health app reaches the backend instead of being invisible to the SDK. Only `bodyTemperature` (manual thermometer entries) existed in `HealthDataType` before, while the bedtime reading has its own HealthKit identifier. Because that identifier is iOS 16+ only, both temperature identifiers share a single unit path (`_isTemperatureQuantityType`) rather than living in the `case` lists of the unit switches. On iOS 15 the new case resolves to `nil` from `toHKSampleType()`, so authorization and sync skip it.
 
 ## 0.15.0
 
