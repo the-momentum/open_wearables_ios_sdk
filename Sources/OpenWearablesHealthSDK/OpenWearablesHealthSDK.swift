@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import UIKit
 import HealthKit
@@ -725,8 +726,10 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         // Blood pressure is synced from the systolic and diastolic samples.
         // Food stays here: the correlation is queried for the parent meal, but
         // HealthKit refuses it in requestAuthorization (see typesForAuthorization).
+        // Workout routes ride on the workout (`fetchWorkoutRoutes`), never as records.
         let disallowedIdentifiers: Set<String> = [
-            HKCorrelationTypeIdentifier.bloodPressure.rawValue
+            HKCorrelationTypeIdentifier.bloodPressure.rawValue,
+            HKSeriesType.workoutRoute().identifier
         ]
         
         return trackedTypes.filter { type in
@@ -740,10 +743,11 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     /// `getQueryableTypes`) cannot be authorized directly. HealthKit throws
     /// `NSInvalidArgumentException` if they are in the read set. Read access to a
     /// food correlation comes from the dietary quantity types it contains.
+    /// The workout route type is not queried on its own but still needs read access.
     internal func typesForAuthorization() -> [HKSampleType] {
         getQueryableTypes().filter { type in
             type.identifier != HKCorrelationTypeIdentifier.food.rawValue
-        }
+        } + trackedTypes.filter { $0.identifier == HKSeriesType.workoutRoute().identifier }
     }
 
     // MARK: - Internal: Sync
@@ -1102,58 +1106,68 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
                     return
                 }
 
-                let payload = self.buildCombinedPayload(samples: allSamples, knownFoodChildIds: knownFoodChildIds)
-                // The actual app state, not `declaredBackground`: observer and resume
-                // syncs are declared foreground but usually run while suspended.
-                let syncContext = SyncRequestContext(
-                    inBackground: self.backgroundTimeRemainingIfInBackground() != nil,
-                    trigger: rrState.trigger
-                )
-
-                self.uploadCombinedPayload(
-                    payload: payload, endpoint: endpoint, credential: freshCredential,
-                    generation: rrState.generation, syncContext: syncContext
-                ) { [weak self] sendSuccess in
+                self.fetchWorkoutRoutes(for: allSamples) { [weak self] workoutRoutes in
                     guard let self = self else { completion(false); return }
-                    if !sendSuccess { completion(false); return }
                     if self.isSyncCancelled(generation: rrState.generation) {
                         completion(false)
                         return
                     }
 
-                    // Phase 3: Update progress for all types that had data
-                    for result in withData {
-                        if fullExport {
-                            self.updateTypeProgress(
-                                typeIdentifier: result.type.identifier, sentInChunk: result.count,
-                                isComplete: false, anchorData: nil, olderThan: result.nextOlderThan
-                            )
-                        } else {
-                            self.updateTypeProgress(
-                                typeIdentifier: result.type.identifier, sentInChunk: result.count,
-                                isComplete: result.isDone, anchorData: result.anchorData
-                            )
-                            if result.isDone {
-                                rrState.completedTypes.insert(result.type.identifier)
+                    let payload = self.buildCombinedPayload(
+                        samples: allSamples, knownFoodChildIds: knownFoodChildIds, workoutRoutes: workoutRoutes
+                    )
+                    // The actual app state, not `declaredBackground`: observer and resume
+                    // syncs are declared foreground but usually run while suspended.
+                    let syncContext = SyncRequestContext(
+                        inBackground: self.backgroundTimeRemainingIfInBackground() != nil,
+                        trigger: rrState.trigger
+                    )
+
+                    self.uploadCombinedPayload(
+                        payload: payload, endpoint: endpoint, credential: freshCredential,
+                        generation: rrState.generation, syncContext: syncContext
+                    ) { [weak self] sendSuccess in
+                        guard let self = self else { completion(false); return }
+                        if !sendSuccess { completion(false); return }
+                        if self.isSyncCancelled(generation: rrState.generation) {
+                            completion(false)
+                            return
+                        }
+
+                        // Phase 3: Update progress for all types that had data
+                        for result in withData {
+                            if fullExport {
+                                self.updateTypeProgress(
+                                    typeIdentifier: result.type.identifier, sentInChunk: result.count,
+                                    isComplete: false, anchorData: nil, olderThan: result.nextOlderThan
+                                )
+                            } else {
+                                self.updateTypeProgress(
+                                    typeIdentifier: result.type.identifier, sentInChunk: result.count,
+                                    isComplete: result.isDone, anchorData: result.anchorData
+                                )
+                                if result.isDone {
+                                    rrState.completedTypes.insert(result.type.identifier)
+                                }
                             }
                         }
-                    }
 
-                    // Phase 4: For full export, capture anchors for done types
-                    let fullExportDone = withData.filter { $0.isDone }.map { $0.type } + doneTypesForAnchorCapture.filter { t in !withData.contains(where: { $0.type == t }) }
-                    if fullExport && !fullExportDone.isEmpty {
-                        self.captureAnchorsForDoneTypes(types: fullExportDone, index: 0, rrState: rrState) { captureOk in
-                            guard captureOk else { completion(false); return }
+                        // Phase 4: For full export, capture anchors for done types
+                        let fullExportDone = withData.filter { $0.isDone }.map { $0.type } + doneTypesForAnchorCapture.filter { t in !withData.contains(where: { $0.type == t }) }
+                        if fullExport && !fullExportDone.isEmpty {
+                            self.captureAnchorsForDoneTypes(types: fullExportDone, index: 0, rrState: rrState) { captureOk in
+                                guard captureOk else { completion(false); return }
+                                self.processNextRound(
+                                    types: types, fullExport: fullExport, endpoint: endpoint,
+                                    rrState: rrState, completion: completion
+                                )
+                            }
+                        } else {
                             self.processNextRound(
                                 types: types, fullExport: fullExport, endpoint: endpoint,
                                 rrState: rrState, completion: completion
                             )
                         }
-                    } else {
-                        self.processNextRound(
-                            types: types, fullExport: fullExport, endpoint: endpoint,
-                            rrState: rrState, completion: completion
-                        )
                     }
                 }
             }
@@ -1214,7 +1228,123 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         }
         healthStore.execute(query)
     }
-    
+
+    // MARK: - Workout routes
+
+    /// Upper bound for reading the routes of one round. A 1 h route is ~3600 locations
+    /// and normally reads well under a second; the cap keeps a slow HealthKit from
+    /// holding the round (and, in the background, the task assertion).
+    internal static let workoutRouteFetchBudget: TimeInterval = 10
+
+    /// Reads the `HKWorkoutRoute` locations of every workout in the round, keyed by
+    /// workout UUID. Only runs when `.workoutRoute` is tracked. A workout without a
+    /// route, a failed query or one still running when the budget runs out is left out
+    /// of the result, so that workout is sent with `route: null` and the round goes on.
+    /// The workout cursor advances either way, so such a route is not re-sent later.
+    private func fetchWorkoutRoutes(
+        for samples: [HKSample],
+        completion: @escaping ([UUID: [CLLocation]]) -> Void
+    ) {
+        let routeType = HKSeriesType.workoutRoute()
+        let workouts = samples.compactMap { $0 as? HKWorkout }
+        guard !workouts.isEmpty,
+              trackedTypes.contains(where: { $0.identifier == routeType.identifier }) else {
+            completion([:])
+            return
+        }
+
+        // In the background leave room for the upload (it needs >= 5 s, see processNextRound).
+        var budget = Self.workoutRouteFetchBudget
+        if let remaining = backgroundTimeRemainingIfInBackground() {
+            budget = max(1, min(budget, remaining - 8))
+        }
+
+        let lock = NSLock()
+        var routes: [UUID: [CLLocation]] = [:]
+        var queries: [HKQuery] = []
+        var pending = workouts.count
+        var finished = false
+
+        let finish: () -> Void = { [weak self] in
+            lock.lock()
+            guard !finished else { lock.unlock(); return }
+            finished = true
+            let result = routes
+            let stillRunning = queries
+            let missing = pending
+            lock.unlock()
+            if missing > 0 {
+                for query in stillRunning { self?.healthStore.stop(query) }
+                self?.logMessage("route: \(missing) of \(workouts.count) workouts not read within \(Int(budget))s, sent without route")
+            }
+            completion(result)
+        }
+        let register: (HKQuery) -> Bool = { query in
+            lock.lock()
+            defer { lock.unlock() }
+            guard !finished else { return false }
+            queries.append(query)
+            return true
+        }
+        let workoutDone: (UUID, [CLLocation]) -> Void = { id, locations in
+            lock.lock()
+            if !finished && !locations.isEmpty { routes[id] = locations }
+            pending -= 1
+            let allDone = pending == 0
+            lock.unlock()
+            if allDone { finish() }
+        }
+
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + budget, execute: finish)
+
+        for workout in workouts {
+            let routeQuery = HKSampleQuery(
+                sampleType: routeType,
+                predicate: HKQuery.predicateForObjects(from: workout),
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: nil
+            ) { [weak self] _, results, error in
+                let workoutRoutes = (results as? [HKWorkoutRoute]) ?? []
+                guard let self = self, error == nil, !workoutRoutes.isEmpty else {
+                    workoutDone(workout.uuid, [])
+                    return
+                }
+                self.readLocations(of: workoutRoutes, register: register) { locations in
+                    workoutDone(workout.uuid, locations)
+                }
+            }
+            if register(routeQuery) { healthStore.execute(routeQuery) }
+        }
+    }
+
+    /// Streams the locations of each route (HealthKit delivers them in batches) and
+    /// concatenates them. A failed route contributes nothing.
+    private func readLocations(
+        of routes: [HKWorkoutRoute],
+        register: @escaping (HKQuery) -> Bool,
+        completion: @escaping ([CLLocation]) -> Void
+    ) {
+        let lock = NSLock()
+        var locations: [CLLocation] = []
+        var remaining = routes.count
+
+        for route in routes {
+            var routeLocations: [CLLocation] = []
+            let query = HKWorkoutRouteQuery(route: route) { _, batch, done, error in
+                if error == nil, let batch = batch { routeLocations.append(contentsOf: batch) }
+                guard done || error != nil else { return }
+                lock.lock()
+                if error == nil { locations.append(contentsOf: routeLocations) }
+                remaining -= 1
+                let allDone = remaining == 0
+                let result = locations
+                lock.unlock()
+                if allDone { completion(result) }
+            }
+            if register(query) { healthStore.execute(query) }
+        }
+    }
+
     // MARK: - Fetch all types in a round (no network, accumulates results)
     
     private func fetchTypesInRound(

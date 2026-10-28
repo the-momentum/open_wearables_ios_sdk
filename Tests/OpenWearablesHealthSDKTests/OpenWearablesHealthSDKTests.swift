@@ -1,3 +1,4 @@
+import CoreLocation
 import XCTest
 import HealthKit
 @testable import OpenWearablesHealthSDK
@@ -415,6 +416,95 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         )
         let laps = OpenWearablesHealthSDK.shared._buildWorkoutLaps(workout, dateFormatter: ISO8601DateFormatter())
         XCTAssertTrue(laps is NSNull)
+    }
+
+    func testWorkoutRouteMapsLocationsInTimeOrder() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let second = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: 52.229701, longitude: 21.012301),
+            altitude: 101.7, horizontalAccuracy: 4, verticalAccuracy: -1,
+            course: -1, speed: -1, timestamp: start.addingTimeInterval(1)
+        )
+        let first = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: 52.229676, longitude: 21.012229),
+            altitude: 101.5, horizontalAccuracy: 3.5, verticalAccuracy: 2,
+            course: 90, speed: 2.9, timestamp: start
+        )
+        let invalid = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+            altitude: 0, horizontalAccuracy: -1, verticalAccuracy: -1,
+            timestamp: start.addingTimeInterval(2)
+        )
+
+        let df = ISO8601DateFormatter()
+        let route = OpenWearablesHealthSDK.shared._buildWorkoutRoute([second, invalid, first], dateFormatter: df)
+
+        guard let points = route as? [[String: Any]] else {
+            XCTFail("Expected route array, got \(route)")
+            return
+        }
+        XCTAssertEqual(points.count, 2)
+        XCTAssertEqual(points[0]["timestamp"] as? String, df.string(from: start))
+        XCTAssertEqual(points[0]["latitude"] as? Double, 52.229676)
+        XCTAssertEqual(points[0]["longitude"] as? Double, 21.012229)
+        XCTAssertEqual(points[0]["altitudeM"] as? Double, 101.5)
+        XCTAssertEqual(points[0]["horizontalAccuracyM"] as? Double, 3.5)
+        XCTAssertEqual(points[0]["verticalAccuracyM"] as? Double, 2)
+        XCTAssertEqual(points[0]["speedMps"] as? Double, 2.9)
+        XCTAssertEqual(points[0]["courseDeg"] as? Double, 90)
+        // Invalid altitude, speed and course are null rather than CoreLocation's -1.
+        XCTAssertTrue(points[1]["altitudeM"] is NSNull)
+        XCTAssertTrue(points[1]["verticalAccuracyM"] is NSNull)
+        XCTAssertTrue(points[1]["speedMps"] is NSNull)
+        XCTAssertTrue(points[1]["courseDeg"] is NSNull)
+    }
+
+    func testWorkoutWithoutRouteHasNullRoute() {
+        let df = ISO8601DateFormatter()
+        XCTAssertTrue(OpenWearablesHealthSDK.shared._buildWorkoutRoute(nil, dateFormatter: df) is NSNull)
+        XCTAssertTrue(OpenWearablesHealthSDK.shared._buildWorkoutRoute([], dateFormatter: df) is NSNull)
+    }
+
+    func testCombinedPayloadCarriesRouteOfItsWorkout() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let workout = HKWorkout(
+            activityType: .running,
+            start: start,
+            end: start.addingTimeInterval(60),
+            workoutEvents: nil,
+            totalEnergyBurned: nil,
+            totalDistance: nil,
+            metadata: nil
+        )
+        let location = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: 52.2, longitude: 21.0),
+            altitude: 100, horizontalAccuracy: 5, verticalAccuracy: 3, timestamp: start
+        )
+        let sdk = OpenWearablesHealthSDK.shared
+
+        let withRoute = sdk.buildCombinedPayload(samples: [workout], workoutRoutes: [workout.uuid: [location]])
+        let withoutRoute = sdk.buildCombinedPayload(samples: [workout])
+
+        let routed = ((withRoute["data"] as? [String: Any])?["workouts"] as? [[String: Any]])?.first
+        let plain = ((withoutRoute["data"] as? [String: Any])?["workouts"] as? [[String: Any]])?.first
+        XCTAssertEqual((routed?["route"] as? [[String: Any]])?.count, 1)
+        XCTAssertTrue(plain?["route"] is NSNull)
+    }
+
+    func testWorkoutRouteIsAuthorizedButNotQueriedAsRecords() {
+        let sdk = OpenWearablesHealthSDK.shared
+        let previous = sdk.trackedTypes
+        defer { sdk.trackedTypes = previous }
+        let routeIdentifier = HKSeriesType.workoutRoute().identifier
+
+        XCTAssertEqual(HealthDataType.workoutRoute.toHKSampleType()?.identifier, routeIdentifier)
+
+        sdk.trackedTypes = sdk.mapTypes([.workout, .workoutRoute])
+        XCTAssertTrue(sdk.typesForAuthorization().contains { $0.identifier == routeIdentifier })
+        XCTAssertFalse(sdk.getQueryableTypes().contains { $0.identifier == routeIdentifier })
+
+        sdk.trackedTypes = sdk.mapTypes([.workout])
+        XCTAssertFalse(sdk.typesForAuthorization().contains { $0.identifier == routeIdentifier })
     }
 
     func testInvalidPersistedRefreshURLDoesNotFallBackToSyncHost() {
