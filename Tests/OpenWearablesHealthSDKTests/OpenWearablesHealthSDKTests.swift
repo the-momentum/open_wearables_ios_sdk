@@ -491,6 +491,23 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertTrue(plain?["route"] is NSNull)
     }
 
+    func testWorkoutsPerRoundAreCappedOnlyWhileRoutesAreTracked() {
+        let sdk = OpenWearablesHealthSDK.shared
+        let previous = sdk.trackedTypes
+        defer { sdk.trackedTypes = previous }
+        let workoutType = HKObjectType.workoutType()
+        let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate)!
+        let cap = OpenWearablesHealthSDK.workoutsPerRoundWithRoutes
+
+        sdk.trackedTypes = sdk.mapTypes([.workout, .workoutRoute, .heartRate])
+        XCTAssertEqual(sdk.roundChunkLimit(for: workoutType, perTypeLimit: 666), cap)
+        XCTAssertEqual(sdk.roundChunkLimit(for: workoutType, perTypeLimit: 1), 1)
+        XCTAssertEqual(sdk.roundChunkLimit(for: heartRate, perTypeLimit: 666), 666)
+
+        sdk.trackedTypes = sdk.mapTypes([.workout, .heartRate])
+        XCTAssertEqual(sdk.roundChunkLimit(for: workoutType, perTypeLimit: 666), 666)
+    }
+
     func testWorkoutRouteIsAuthorizedButNotQueriedAsRecords() {
         let sdk = OpenWearablesHealthSDK.shared
         let previous = sdk.trackedTypes

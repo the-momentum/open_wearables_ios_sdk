@@ -1236,6 +1236,26 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     /// holding the round (and, in the background, the task assertion).
     internal static let workoutRouteFetchBudget: TimeInterval = 10
 
+    /// Workouts per round while routes are read. The record chunk counts a workout as
+    /// one item, but with its route it is ~0.25 MB per hour of GPS, so a 2000-record
+    /// round of a full export carried 150+ routes (~65 MB) in one upload. Five keeps a
+    /// round at a few MB even for long hikes.
+    internal static let workoutsPerRoundWithRoutes = 5
+
+    internal var tracksWorkoutRoutes: Bool {
+        let routeIdentifier = HKSeriesType.workoutRoute().identifier
+        return trackedTypes.contains { $0.identifier == routeIdentifier }
+    }
+
+    /// Chunk limit for one type in a round: the shared per-type limit, lowered for
+    /// workouts while their routes are sent along.
+    internal func roundChunkLimit(for type: HKSampleType, perTypeLimit: Int) -> Int {
+        guard type.identifier == HKObjectType.workoutType().identifier, tracksWorkoutRoutes else {
+            return perTypeLimit
+        }
+        return min(perTypeLimit, Self.workoutsPerRoundWithRoutes)
+    }
+
     /// Reads the `HKWorkoutRoute` locations of every workout in the round, keyed by
     /// workout UUID. Only runs when `.workoutRoute` is tracked. A workout without a
     /// route, a failed query or one still running when the budget runs out is left out
@@ -1247,8 +1267,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     ) {
         let routeType = HKSeriesType.workoutRoute()
         let workouts = samples.compactMap { $0 as? HKWorkout }
-        guard !workouts.isEmpty,
-              trackedTypes.contains(where: { $0.identifier == routeType.identifier }) else {
+        guard !workouts.isEmpty, tracksWorkoutRoutes else {
             completion([:])
             return
         }
@@ -1359,10 +1378,11 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
         }
         
         let type = types[index]
+        let typeLimit = roundChunkLimit(for: type, perTypeLimit: chunkLimit)
         
         if fullExport {
             let cursor = rrState.olderThanCursors[type.identifier]
-            fetchOneChunkNewestFirst(type: type, olderThan: cursor, chunkLimit: chunkLimit, generation: rrState.generation) {
+            fetchOneChunkNewestFirst(type: type, olderThan: cursor, chunkLimit: typeLimit, generation: rrState.generation) {
                 [weak self] success, samples, nextOlderThan, isDone in
                 guard let self = self else { completion(false, accumulated); return }
                 if !success { completion(false, accumulated); return }
@@ -1379,7 +1399,7 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
             }
         } else {
             let anchor = rrState.anchorCursors[type.identifier]
-            fetchOneChunkIncremental(type: type, anchor: anchor, chunkLimit: chunkLimit, generation: rrState.generation) {
+            fetchOneChunkIncremental(type: type, anchor: anchor, chunkLimit: typeLimit, generation: rrState.generation) {
                 [weak self] success, samples, newAnchor, anchorData, isDone in
                 guard let self = self else { completion(false, accumulated); return }
                 if !success { completion(false, accumulated); return }
