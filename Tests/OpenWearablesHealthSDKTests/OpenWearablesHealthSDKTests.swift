@@ -338,6 +338,43 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertEqual(records.first?["unit"] as? String, "bpm")
     }
 
+    func testActivityAndEffortTypesMapToHealthKit() {
+        XCTAssertEqual(HealthDataType.appleExerciseTime.rawValue, "appleExerciseTime")
+        XCTAssertEqual(HealthDataType.walkingHeartRateAverage.rawValue, "walkingHeartRateAverage")
+        XCTAssertEqual(HealthDataType.physicalEffort.rawValue, "physicalEffort")
+        XCTAssertEqual(
+            HealthDataType.appleSleepingBreathingDisturbances.rawValue,
+            "appleSleepingBreathingDisturbances"
+        )
+
+        XCTAssertEqual(
+            HealthDataType.appleExerciseTime.toHKSampleType()?.identifier,
+            HKQuantityTypeIdentifier.appleExerciseTime.rawValue
+        )
+        XCTAssertEqual(
+            HealthDataType.walkingHeartRateAverage.toHKSampleType()?.identifier,
+            HKQuantityTypeIdentifier.walkingHeartRateAverage.rawValue
+        )
+
+        if #available(iOS 17.0, *) {
+            XCTAssertEqual(
+                HealthDataType.physicalEffort.toHKSampleType()?.identifier,
+                HKQuantityTypeIdentifier.physicalEffort.rawValue
+            )
+        } else {
+            XCTAssertNil(HealthDataType.physicalEffort.toHKSampleType())
+        }
+
+        if #available(iOS 18.0, *) {
+            XCTAssertEqual(
+                HealthDataType.appleSleepingBreathingDisturbances.toHKSampleType()?.identifier,
+                HKQuantityTypeIdentifier.appleSleepingBreathingDisturbances.rawValue
+            )
+        } else {
+            XCTAssertNil(HealthDataType.appleSleepingBreathingDisturbances.toHKSampleType())
+        }
+    }
+
     func testRunningDynamicsTypesMapToHealthKit() {
         XCTAssertEqual(HealthDataType.runningPower.rawValue, "runningPower")
         XCTAssertEqual(HealthDataType.runningVerticalOscillation.rawValue, "runningVerticalOscillation")
