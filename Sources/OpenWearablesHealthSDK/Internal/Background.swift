@@ -85,57 +85,57 @@ extension OpenWearablesHealthSDK {
     @available(iOS 13.0, *)
     internal func handleAppRefresh(task: BGAppRefreshTask) {
         scheduleAppRefresh()
-        
-        let opQueue = OperationQueue()
-        let op = BlockOperation { [weak self] in
-            let group = DispatchGroup()
-            group.enter()
-            
-            self?.collectAllData(fullExport: false, isBackground: true) {
-                group.leave()
-            }
-            
-            let result = group.wait(timeout: .now() + 20)
-            if result == .timedOut {
-                self?.logMessage("BGAppRefresh sync timed out")
-            }
+        runSyncInBackgroundTask(task, name: "BGAppRefresh") { done in
+            self.collectAllData(fullExport: false, isBackground: true, completion: done)
         }
-
-        task.expirationHandler = {
-            self.logMessage("BGAppRefresh task expired - cancelling in-flight uploads")
-            self.cancelInFlightSyncUploads(reason: "backgroundExpiration")
-            op.cancel()
-        }
-        op.completionBlock = { task.setTaskCompleted(success: !op.isCancelled) }
-        opQueue.addOperation(op)
     }
 
     @available(iOS 13.0, *)
     internal func handleProcessing(task: BGProcessingTask) {
         scheduleProcessing()
-        
-        let opQueue = OperationQueue()
-        let op = BlockOperation { [weak self] in
-            let group = DispatchGroup()
-            group.enter()
-            
-            self?.retryOutboxIfPossible()
-            self?.collectAllData(fullExport: false, isBackground: true) {
-                group.leave()
-            }
-            
-            let result = group.wait(timeout: .now() + 25)
-            if result == .timedOut {
-                self?.logMessage("BGProcessing sync timed out")
-            }
+        retryOutboxIfPossible()
+        runSyncInBackgroundTask(task, name: "BGProcessing") { done in
+            self.collectAllData(fullExport: false, isBackground: true, completion: done)
+        }
+    }
+
+    /// Completes `task` when the sync ends rather than after a fixed wait. The old 20s / 25s
+    /// wait marked the task done while the round was still uploading, so iOS suspended the
+    /// app mid-upload, and a processing task, which can run for minutes, used a fraction of
+    /// its time. If iOS ends the task first, the expiration handler cancels the uploads and
+    /// the round resumes on the next wake, since `SyncState` only advances on a 2xx.
+    @available(iOS 13.0, *)
+    private func runSyncInBackgroundTask(
+        _ task: BGTask,
+        name: String,
+        sync: @escaping (@escaping () -> Void) -> Void
+    ) {
+        let lock = NSLock()
+        var completed = false
+        let complete: (Bool) -> Void = { success in
+            lock.lock()
+            let first = !completed
+            completed = true
+            lock.unlock()
+            if first { task.setTaskCompleted(success: success) }
         }
 
-        task.expirationHandler = {
-            self.logMessage("BGProcessing task expired - cancelling in-flight uploads")
-            self.cancelInFlightSyncUploads(reason: "backgroundExpiration")
-            op.cancel()
+        task.expirationHandler = { [weak self] in
+            self?.logMessage("\(name) task expired - cancelling in-flight uploads")
+            self?.cancelInFlightSyncUploads(reason: "backgroundExpiration")
+            complete(false)
         }
-        op.completionBlock = { task.setTaskCompleted(success: !op.isCancelled) }
-        opQueue.addOperation(op)
+
+        // iOS often runs these tasks overnight while the device is locked, when every
+        // HealthKit read fails. Skip the round and leave it to the unlock, the next
+        // foreground or a later task, which the flag tells to sync.
+        guard isProtectedDataAvailableNow() else {
+            logMessage("\(name): device locked - deferring sync until unlock")
+            pendingSyncAfterUnlock = true
+            complete(true)
+            return
+        }
+
+        sync { complete(true) }
     }
 }
