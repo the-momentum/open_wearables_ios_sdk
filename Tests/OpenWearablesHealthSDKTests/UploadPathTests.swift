@@ -15,6 +15,7 @@ final class UploadPathTests: XCTestCase {
     private func upload(
         on sdk: OpenWearablesHealthSDK,
         credential: String = "access-1",
+        syncContext: SyncRequestContext? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> Bool? {
@@ -30,7 +31,8 @@ final class UploadPathTests: XCTestCase {
 
         var outcome: Bool?
         sdk.uploadCombinedPayload(
-            payload: payload, endpoint: endpoint, credential: credential, generation: generation
+            payload: payload, endpoint: endpoint, credential: credential, generation: generation,
+            syncContext: syncContext
         ) { outcome = $0 }
 
         waitUntil { outcome != nil }
@@ -91,6 +93,41 @@ final class UploadPathTests: XCTestCase {
                 "both attempts should carry one request id so the server can correlate them"
             )
             XCTAssertEqual(OpenWearablesHealthSdkKeychain.getAccessToken(), "access-2")
+        }
+    }
+
+    /// App state and trigger travel as headers so server logs can split syncs by them.
+    /// The 401 replay has to carry the same values as the attempt it repeats.
+    func testUploadSendsSyncContextHeadersOnBothAttempts() {
+        withIsolatedSDK { sdk, _ in
+            StubURLProtocol.install { request in
+                if request.url?.path.hasSuffix("/token/refresh") == true {
+                    return .status(200, #"{"access_token":"access-2","refresh_token":"refresh-2"}"#)
+                }
+                let credential = request.value(forHTTPHeaderField: "Authorization")
+                return credential == "Bearer access-2" ? .status(200) : .status(401)
+            }
+
+            let context = SyncRequestContext(inBackground: true, trigger: .healthKitObserver)
+            XCTAssertEqual(upload(on: sdk, syncContext: context), true)
+
+            let uploads = StubURLProtocol.requests(matching: "/sync")
+            XCTAssertEqual(uploads.count, 2)
+            for upload in uploads {
+                XCTAssertEqual(upload.value(forHTTPHeaderField: "X-Open-Wearables-App-State"), "background")
+                XCTAssertEqual(upload.value(forHTTPHeaderField: "X-Open-Wearables-Sync-Trigger"), "healthkit_observer")
+            }
+        }
+    }
+
+    func testUploadWithoutSyncContextOmitsItsHeaders() {
+        withIsolatedSDK { sdk, _ in
+            StubURLProtocol.install { _ in .status(200) }
+            XCTAssertEqual(upload(on: sdk), true)
+
+            let upload = StubURLProtocol.requests(matching: "/sync").first
+            XCTAssertNil(upload?.value(forHTTPHeaderField: "X-Open-Wearables-App-State"))
+            XCTAssertNil(upload?.value(forHTTPHeaderField: "X-Open-Wearables-Sync-Trigger"))
         }
     }
 
