@@ -980,9 +980,40 @@ extension OpenWearablesHealthSDK {
             if let length = ev.metadata?[HKMetadataKeyLapLength] as? HKQuantity {
                 lap["distanceM"] = length.doubleValue(for: .meter())
             }
+            if let style = _swimmingStrokeStyleString(ev.metadata?[HKMetadataKeySwimmingStrokeStyle]) {
+                lap["strokeStyle"] = style
+            }
+            if #available(iOS 16.0, *), let swolf = _swolfScore(ev.metadata?[HKMetadataKeySWOLFScore]) {
+                lap["swolf"] = swolf
+            }
             return lap
         }
         return laps.isEmpty ? NSNull() : laps
+    }
+
+    /// `HKMetadataKeySwimmingStrokeStyle` holds an `NSNumber` with the `HKSwimmingStrokeStyle` raw value.
+    internal func _swimmingStrokeStyleString(_ value: Any?) -> String? {
+        guard let raw = (value as? NSNumber)?.intValue,
+              let style = HKSwimmingStrokeStyle(rawValue: raw) else { return nil }
+        switch style {
+        case .unknown: return "unknown"
+        case .mixed: return "mixed"
+        case .freestyle: return "freestyle"
+        case .backstroke: return "backstroke"
+        case .breaststroke: return "breaststroke"
+        case .butterfly: return "butterfly"
+        case .kickboard: return "kickboard"
+        @unknown default: return nil
+        }
+    }
+
+    /// `HKMetadataKeySWOLFScore` is documented as an `NSNumber`; accept a count `HKQuantity` too.
+    internal func _swolfScore(_ value: Any?) -> Double? {
+        if let number = value as? NSNumber { return number.doubleValue }
+        if let quantity = value as? HKQuantity, quantity.is(compatibleWith: .count()) {
+            return quantity.doubleValue(for: .count())
+        }
+        return nil
     }
 
     internal func _workoutEventTypeString(_ type: HKWorkoutEventType) -> String? {

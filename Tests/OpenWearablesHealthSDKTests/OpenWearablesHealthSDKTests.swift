@@ -402,6 +402,57 @@ final class OpenWearablesHealthSDKTests: XCTestCase {
         XCTAssertNil(OpenWearablesHealthSDK.shared._workoutEventTypeString(.pause))
     }
 
+    func testPoolSwimLapsCarryStrokeStyleAndSwolf() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var metadata: [String: Any] = [
+            HKMetadataKeyLapLength: HKQuantity(unit: .meter(), doubleValue: 50),
+            HKMetadataKeySwimmingStrokeStyle: NSNumber(value: HKSwimmingStrokeStyle.breaststroke.rawValue),
+        ]
+        if #available(iOS 16.0, *) {
+            metadata[HKMetadataKeySWOLFScore] = NSNumber(value: 88)
+        }
+        let length = HKWorkoutEvent(type: .lap, dateInterval: DateInterval(start: start, duration: 62), metadata: metadata)
+        let kick = HKWorkoutEvent(
+            type: .lap,
+            dateInterval: DateInterval(start: start.addingTimeInterval(90), duration: 70),
+            metadata: [HKMetadataKeySwimmingStrokeStyle: NSNumber(value: HKSwimmingStrokeStyle.kickboard.rawValue)]
+        )
+        let workout = HKWorkout(
+            activityType: .swimming,
+            start: start,
+            end: start.addingTimeInterval(180),
+            workoutEvents: [length, kick],
+            totalEnergyBurned: nil,
+            totalDistance: nil,
+            metadata: nil
+        )
+
+        let laps = OpenWearablesHealthSDK.shared._buildWorkoutLaps(workout, dateFormatter: ISO8601DateFormatter())
+
+        guard let rows = laps as? [[String: Any]] else {
+            XCTFail("Expected laps array, got \(laps)")
+            return
+        }
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows[0]["strokeStyle"] as? String, "breaststroke")
+        XCTAssertEqual(rows[0]["distanceM"] as? Double, 50)
+        if #available(iOS 16.0, *) {
+            XCTAssertEqual(rows[0]["swolf"] as? Double, 88)
+        }
+        XCTAssertEqual(rows[1]["strokeStyle"] as? String, "kickboard")
+        XCTAssertNil(rows[1]["swolf"])
+    }
+
+    func testStrokeStyleAndSwolfParsing() {
+        let sdk = OpenWearablesHealthSDK.shared
+        XCTAssertEqual(sdk._swimmingStrokeStyleString(NSNumber(value: 2)), "freestyle")
+        XCTAssertNil(sdk._swimmingStrokeStyleString(NSNumber(value: 99)))
+        XCTAssertNil(sdk._swimmingStrokeStyleString("2"))
+        XCTAssertEqual(sdk._swolfScore(HKQuantity(unit: .count(), doubleValue: 41)), 41)
+        XCTAssertNil(sdk._swolfScore(HKQuantity(unit: .meter(), doubleValue: 41)))
+        XCTAssertNil(sdk._swolfScore(nil))
+    }
+
     func testWorkoutWithoutEventsHasNullLaps() {
         let start = Date(timeIntervalSince1970: 1_700_000_000)
         let workout = HKWorkout(
