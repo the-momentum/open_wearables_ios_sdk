@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import HealthKit
 
@@ -120,6 +121,9 @@ public enum HealthDataType: String, CaseIterable, Sendable {
 
     // Workout
     case workout
+    /// GPS route of each synced workout (`workouts[].route`). Opt-in: only read when
+    /// requested, and only together with `.workout`. Not synced as records of its own.
+    case workoutRoute
 
     // Workout Effort (iOS 18.0+ / watchOS 11.0+)
     case workoutEffortScore
@@ -345,6 +349,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return nil
         case .workout:
             return HKObjectType.workoutType()
+        case .workoutRoute:
+            return HKSeriesType.workoutRoute()
         case .workoutEffortScore:
             if #available(iOS 18.0, watchOS 11.0, *) {
                 return HKObjectType.quantityType(forIdentifier: .workoutEffortScore)
@@ -373,7 +379,11 @@ extension OpenWearablesHealthSDK {
     /// `knownFoodChildIds` are dietary samples that belong to a food correlation outside
     /// this round (see `fetchFoodChildIds`). They are skipped here because the food
     /// query sends them with `parentId`, in this round or another one.
-    internal func buildCombinedPayload(samples: [HKSample], knownFoodChildIds: Set<UUID> = []) -> [String: Any] {
+    internal func buildCombinedPayload(
+        samples: [HKSample],
+        knownFoodChildIds: Set<UUID> = [],
+        workoutRoutes: [UUID: [CLLocation]] = [:]
+    ) -> [String: Any] {
         var workouts: [[String: Any]] = []
         var records: [[String: Any]] = []
         var sleep: [[String: Any]] = []
@@ -389,7 +399,7 @@ extension OpenWearablesHealthSDK {
                 
                 for s in batch {
                     if let w = s as? HKWorkout {
-                        workouts.append(_mapWorkoutEfficient(w, dateFormatter: dateFormatter))
+                        workouts.append(_mapWorkoutEfficient(w, route: workoutRoutes[w.uuid], dateFormatter: dateFormatter))
                     } else if let q = s as? HKQuantitySample {
                         // Sent as a child of HKCorrelationTypeFood (this round or another).
                         if foodChildIds.contains(q.uuid) { continue }
@@ -940,7 +950,9 @@ extension OpenWearablesHealthSDK {
         return records
     }
 
-    private func _mapWorkoutEfficient(_ w: HKWorkout, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
+    private func _mapWorkoutEfficient(
+        _ w: HKWorkout, route: [CLLocation]?, dateFormatter: ISO8601DateFormatter
+    ) -> [String: Any] {
         let stats = _buildWorkoutStats(w)
 
         return [
@@ -956,10 +968,37 @@ extension OpenWearablesHealthSDK {
             "values": stats,
             "segments": NSNull(),
             "laps": _buildWorkoutLaps(w, dateFormatter: dateFormatter),
-            "route": NSNull(),
+            "route": _buildWorkoutRoute(route, dateFormatter: dateFormatter),
             "samples": NSNull(),
             "metadata": NSNull()
         ]
+    }
+
+    // MARK: - Workout route
+
+    /// Maps the `CLLocation`s of a workout's `HKWorkoutRoute` into the payload `route` array.
+    /// Locations with a negative horizontal accuracy carry no valid coordinates and are
+    /// dropped; altitude, speed and course are null when CoreLocation marks them invalid.
+    /// Returns `NSNull()` when there is no route (or route reading is not enabled).
+    internal func _buildWorkoutRoute(_ locations: [CLLocation]?, dateFormatter: ISO8601DateFormatter) -> Any {
+        guard let locations = locations else { return NSNull() }
+        let points: [[String: Any]] = locations
+            .filter { $0.horizontalAccuracy >= 0 }
+            .sorted { $0.timestamp < $1.timestamp }
+            .map { loc in
+                let hasAltitude = loc.verticalAccuracy >= 0
+                return [
+                    "timestamp": dateFormatter.string(from: loc.timestamp),
+                    "latitude": loc.coordinate.latitude,
+                    "longitude": loc.coordinate.longitude,
+                    "altitudeM": hasAltitude ? loc.altitude : NSNull(),
+                    "horizontalAccuracyM": loc.horizontalAccuracy,
+                    "verticalAccuracyM": hasAltitude ? loc.verticalAccuracy : NSNull(),
+                    "speedMps": loc.speed >= 0 ? loc.speed : NSNull(),
+                    "courseDeg": loc.course >= 0 ? loc.course : NSNull()
+                ]
+            }
+        return points.isEmpty ? NSNull() : points
     }
     
     // MARK: - Workout laps / events
