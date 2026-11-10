@@ -150,6 +150,9 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     internal let healthStore = HKHealthStore()
     internal var session: URLSession!
     internal var foregroundSession: URLSession!
+    /// Where a sync round continues after its upload finishes. Serial, so the
+    /// rounds of a run stay ordered; see `uploadCombinedPayload`.
+    internal let syncContinuationQueue = DispatchQueue(label: "health_sync_continuation", qos: .utility)
     internal var trackedTypes: [HKSampleType] = []
     internal var backgroundChunkSize: Int = 100
     internal var recordsPerChunk: Int = 2000

@@ -44,6 +44,30 @@ final class UploadPathTests: XCTestCase {
         }
     }
 
+    /// What follows an upload persists sync state per type; it must not run on the
+    /// host app's main thread.
+    func testUploadCompletesOffTheMainThread() {
+        withIsolatedSDK { sdk, _ in
+            StubURLProtocol.install { _ in .status(200) }
+            guard let endpoint = sdk.syncEndpoint, let generation = sdk.beginSyncRun() else {
+                return XCTFail("Could not start a sync run")
+            }
+            defer { sdk.finishSync(generation: generation) }
+
+            let lock = NSLock()
+            var completedOnMain: Bool?
+            sdk.uploadCombinedPayload(
+                payload: payload, endpoint: endpoint, credential: "access-1", generation: generation
+            ) { _ in
+                lock.lock(); completedOnMain = Thread.isMainThread; lock.unlock()
+            }
+
+            waitUntil { lock.lock(); defer { lock.unlock() }; return completedOnMain != nil }
+            lock.lock(); defer { lock.unlock() }
+            XCTAssertEqual(completedOnMain, false)
+        }
+    }
+
     /// The production `ClientDisconnect` 400: the server never stored the body, so the
     /// round has to be rebuilt rather than skipped.
     func testUploadDoesNotAdvanceOnClientError() {

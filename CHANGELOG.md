@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* **Sync no longer stalls the host app's UI** (Front Back Labs fork): the work that follows each combined upload — a `SyncState` read and atomic write per type in the round, then the next round's setup — ran on the main queue, because the foreground session delivers there. On device that was 16–27 ms of file I/O on the main thread a few times a second for as long as a sync ran, which showed up as dropped frames while scrolling. It now continues on a private serial queue, like the HealthKit fetch callbacks that drive the rest of the loop. Upload outcome handling, cancellation and what a 2xx advances are unchanged.
+
 * **Incremental sync during backfill** (Front Back Labs fork): during the initial full export, every unfinished type now runs two channels per round — the newest-first history crawl and a concurrent anchored stream bounded to arrivals since the sync session began — so fresh data flows from the first round instead of waiting for the whole backfill. A type completes only when both channels drain; the head stream's anchor persists via `pendingAnchorData`, so a paused session resumes mid-gap. Previously incremental sync was suppressed until the entire backfill finished, so users with large HealthKit histories could go days or weeks without fresh-data syncs while the initial export ran. Sync-state persistence, anchors, and combined-payload upload behavior are unchanged.
 
 * **Heart rate recovery**: authorize and sync `heartRateRecoveryOneMinute` (iOS 16+) as a quantity sample — the same path as `heartRate` / `vo2Max`. Value is the one-minute post-workout HR drop in `bpm`. Apple Watch writes these after a recorded workout; they are not derived from raw heart-rate samples.
