@@ -43,6 +43,15 @@ extension OpenWearablesHealthSDK {
         generation: Int,
         completion: @escaping (Bool) -> Void
     ) {
+        // The foreground session delivers on the main queue, and what follows an
+        // upload is a `SyncState` read and atomic write per type in the round plus
+        // the next round's setup. Run that off the main thread, as the HealthKit
+        // fetch callbacks that drive the rest of the loop already do, so a sync in
+        // progress does not stall the host app's UI.
+        let completion: (Bool) -> Void = { [syncContinuationQueue] success in
+            syncContinuationQueue.async { completion(success) }
+        }
+
         guard let payloadData = try? JSONSerialization.data(withJSONObject: payload) else {
             self.logMessage("Failed to serialize payload")
             completion(false)

@@ -150,6 +150,12 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     internal let healthStore = HKHealthStore()
     internal var session: URLSession!
     internal var foregroundSession: URLSession!
+    /// Where a sync round continues after its upload finishes. Serial, so the
+    /// rounds of a run stay ordered; see `uploadCombinedPayload`. Nothing on the
+    /// main thread may ever block on it: loop code hops to main synchronously
+    /// (`backgroundTimeRemainingIfInBackground`), so a main-side wait on this
+    /// queue would deadlock.
+    internal let syncContinuationQueue = DispatchQueue(label: "health_sync_continuation", qos: .utility)
     internal var trackedTypes: [HKSampleType] = []
     internal var backgroundChunkSize: Int = 100
     internal var recordsPerChunk: Int = 2000
@@ -628,6 +634,8 @@ public final class OpenWearablesHealthSDK: NSObject, URLSessionDelegate, URLSess
     }
     
     /// Resume an interrupted sync session.
+    /// - Parameter completion: Called with `true` when the resumed sync finishes.
+    ///   Invoked on an internal queue, not the main queue — dispatch to main for UI work.
     public func resumeSync(completion: @escaping (Bool) -> Void) {
         guard hasResumableSyncSession() else {
             completion(false)
