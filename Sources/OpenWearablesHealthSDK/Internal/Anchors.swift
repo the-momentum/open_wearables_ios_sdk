@@ -67,11 +67,11 @@ extension OpenWearablesHealthSDK {
         let fullDone = defaults.bool(forKey: fullDoneKey())
         if fullDone {
             logMessage("Incremental sync")
-            syncAll(fullExport: false, completion: { completion(true) })
+            syncAll(fullExport: false, trigger: .start, completion: { completion(true) })
         } else {
             logMessage("Full export")
             isInitialSyncInProgress = true
-            syncAll(fullExport: true, completion: { completion(true) })
+            syncAll(fullExport: true, trigger: .start, completion: { completion(true) })
         }
     }
 }

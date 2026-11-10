@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import HealthKit
 
@@ -44,6 +45,9 @@ public enum HealthDataType: String, CaseIterable, Sendable {
     case leanBodyMass
     case waistCircumference
     case bodyTemperature
+    /// Overnight wrist-temperature samples recorded by Apple Watch (Series 8 and later, iOS 16+).
+    /// Distinct from `bodyTemperature`, which carries manual thermometer readings.
+    case appleSleepingWristTemperature
     
     // Blood & Metabolic
     case bloodGlucose
@@ -117,6 +121,9 @@ public enum HealthDataType: String, CaseIterable, Sendable {
 
     // Workout
     case workout
+    /// GPS route of each synced workout (`workouts[].route`). Opt-in: only read when
+    /// requested, and only together with `.workout`. Not synced as records of its own.
+    case workoutRoute
 
     // Workout Effort (iOS 18.0+ / watchOS 11.0+)
     case workoutEffortScore
@@ -195,6 +202,11 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return nil
         case .bodyTemperature:
             return HKObjectType.quantityType(forIdentifier: .bodyTemperature)
+        case .appleSleepingWristTemperature:
+            if #available(iOS 16.0, *) {
+                return HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+            }
+            return nil
         case .bloodGlucose:
             return HKObjectType.quantityType(forIdentifier: .bloodGlucose)
         case .insulinDelivery:
@@ -337,6 +349,8 @@ public enum HealthDataType: String, CaseIterable, Sendable {
             return nil
         case .workout:
             return HKObjectType.workoutType()
+        case .workoutRoute:
+            return HKSeriesType.workoutRoute()
         case .workoutEffortScore:
             if #available(iOS 18.0, watchOS 11.0, *) {
                 return HKObjectType.quantityType(forIdentifier: .workoutEffortScore)
@@ -365,7 +379,11 @@ extension OpenWearablesHealthSDK {
     /// `knownFoodChildIds` are dietary samples that belong to a food correlation outside
     /// this round (see `fetchFoodChildIds`). They are skipped here because the food
     /// query sends them with `parentId`, in this round or another one.
-    internal func buildCombinedPayload(samples: [HKSample], knownFoodChildIds: Set<UUID> = []) -> [String: Any] {
+    internal func buildCombinedPayload(
+        samples: [HKSample],
+        knownFoodChildIds: Set<UUID> = [],
+        workoutRoutes: [UUID: [CLLocation]] = [:]
+    ) -> [String: Any] {
         var workouts: [[String: Any]] = []
         var records: [[String: Any]] = []
         var sleep: [[String: Any]] = []
@@ -381,7 +399,7 @@ extension OpenWearablesHealthSDK {
                 
                 for s in batch {
                     if let w = s as? HKWorkout {
-                        workouts.append(_mapWorkoutEfficient(w, dateFormatter: dateFormatter))
+                        workouts.append(_mapWorkoutEfficient(w, route: workoutRoutes[w.uuid], dateFormatter: dateFormatter))
                     } else if let q = s as? HKQuantitySample {
                         // Sent as a child of HKCorrelationTypeFood (this round or another).
                         if foodChildIds.contains(q.uuid) { continue }
@@ -453,6 +471,18 @@ extension OpenWearablesHealthSDK {
 
     // MARK: - Units / helpers
 
+    /// Both temperature identifiers share a unit; `appleSleepingWristTemperature` is iOS 16+, so the
+    /// match is by identifier rather than by a `case` in the switches below.
+    private func _isTemperatureQuantityType(_ qt: HKQuantityType) -> Bool {
+        if qt.identifier == HKQuantityTypeIdentifier.bodyTemperature.rawValue {
+            return true
+        }
+        if #available(iOS 16.0, *) {
+            return qt.identifier == HKQuantityTypeIdentifier.appleSleepingWristTemperature.rawValue
+        }
+        return false
+    }
+
     /// Units HealthKit accepts for dietary quantities, as on a nutrition label.
     /// Energy keeps `Cal` for the type already shipped; the rest are g / mg / mcg / L.
     private func _dietaryUnit(for qt: HKQuantityType) -> (HKUnit, String)? {
@@ -509,6 +539,9 @@ extension OpenWearablesHealthSDK {
     }
 
     private func _getFallbackUnit(for qt: HKQuantityType) -> HKUnit {
+        if _isTemperatureQuantityType(qt) {
+            return .degreeCelsius()
+        }
         switch qt {
         case HKObjectType.quantityType(forIdentifier: .stepCount):
             return .count()
@@ -578,6 +611,9 @@ extension OpenWearablesHealthSDK {
     }
 
     private func _defaultUnit(for qt: HKQuantityType) -> (HKUnit, String) {
+        if _isTemperatureQuantityType(qt) {
+            return (.degreeCelsius(), "degC")
+        }
         switch qt {
         case HKObjectType.quantityType(forIdentifier: .stepCount):
             return (.count(), "count")
@@ -812,7 +848,8 @@ extension OpenWearablesHealthSDK {
             finalUnit = fallbackUnit.unitString
         }
 
-        if q.quantityType.identifier == HKQuantityTypeIdentifier.oxygenSaturation.rawValue {
+        // HKUnit.percent() is a 0-1 fraction; "%" is sent on a 0-100 scale.
+        if finalUnit == "%" {
             value *= 100
         }
 
@@ -913,7 +950,9 @@ extension OpenWearablesHealthSDK {
         return records
     }
 
-    private func _mapWorkoutEfficient(_ w: HKWorkout, dateFormatter: ISO8601DateFormatter) -> [String: Any] {
+    private func _mapWorkoutEfficient(
+        _ w: HKWorkout, route: [CLLocation]?, dateFormatter: ISO8601DateFormatter
+    ) -> [String: Any] {
         let stats = _buildWorkoutStats(w)
 
         return [
@@ -929,10 +968,37 @@ extension OpenWearablesHealthSDK {
             "values": stats,
             "segments": NSNull(),
             "laps": _buildWorkoutLaps(w, dateFormatter: dateFormatter),
-            "route": NSNull(),
+            "route": _buildWorkoutRoute(route, dateFormatter: dateFormatter),
             "samples": NSNull(),
             "metadata": NSNull()
         ]
+    }
+
+    // MARK: - Workout route
+
+    /// Maps the `CLLocation`s of a workout's `HKWorkoutRoute` into the payload `route` array.
+    /// Locations with a negative horizontal accuracy carry no valid coordinates and are
+    /// dropped; altitude, speed and course are null when CoreLocation marks them invalid.
+    /// Returns `NSNull()` when there is no route (or route reading is not enabled).
+    internal func _buildWorkoutRoute(_ locations: [CLLocation]?, dateFormatter: ISO8601DateFormatter) -> Any {
+        guard let locations = locations else { return NSNull() }
+        let points: [[String: Any]] = locations
+            .filter { $0.horizontalAccuracy >= 0 }
+            .sorted { $0.timestamp < $1.timestamp }
+            .map { loc in
+                let hasAltitude = loc.verticalAccuracy >= 0
+                return [
+                    "timestamp": dateFormatter.string(from: loc.timestamp),
+                    "latitude": loc.coordinate.latitude,
+                    "longitude": loc.coordinate.longitude,
+                    "altitudeM": hasAltitude ? loc.altitude : NSNull(),
+                    "horizontalAccuracyM": loc.horizontalAccuracy,
+                    "verticalAccuracyM": hasAltitude ? loc.verticalAccuracy : NSNull(),
+                    "speedMps": loc.speed >= 0 ? loc.speed : NSNull(),
+                    "courseDeg": loc.course >= 0 ? loc.course : NSNull()
+                ]
+            }
+        return points.isEmpty ? NSNull() : points
     }
     
     // MARK: - Workout laps / events
@@ -1076,22 +1142,31 @@ extension OpenWearablesHealthSDK {
         if let swimmingLocationType = w.metadata?[HKMetadataKeySwimmingLocationType] as? NSNumber { stats.append(["type": "swimmingLocationType", "value": swimmingLocationType.intValue, "unit": "enum"]) }
         if let indoorWorkout = w.metadata?[HKMetadataKeyIndoorWorkout] as? Bool { stats.append(["type": "indoorWorkout", "value": indoorWorkout ? 1 : 0, "unit": "bool"]) }
         if let weatherTemp = w.metadata?[HKMetadataKeyWeatherTemperature] as? HKQuantity { stats.append(["type": "weatherTemperature", "value": weatherTemp.doubleValue(for: .degreeCelsius()), "unit": "degC"]) }
-        if let weatherHumidity = w.metadata?[HKMetadataKeyWeatherHumidity] as? HKQuantity { stats.append(["type": "weatherHumidity", "value": weatherHumidity.doubleValue(for: .percent()), "unit": "%"]) }
+        if let weatherHumidity = w.metadata?[HKMetadataKeyWeatherHumidity] as? HKQuantity { stats.append(["type": "weatherHumidity", "value": weatherHumidity.doubleValue(for: .percent()) * 100, "unit": "%"]) }
         
         return stats
     }
     
     // MARK: - Source mapper (unified format)
     
+    // Bundle id prefix of samples written by Apple's own devices (iPhone, Apple Watch)
+    private static let appleOwnSourcePrefix = "com.apple.health."
+
     private func _mapSource(_ sourceRevision: HKSourceRevision, device: HKDevice?) -> [String: Any] {
+        // productType is the hardware the writer app ran on. It names the producing device only for
+        // Apple's own sources; for a third-party writer (e.g. Oura) it is the relaying iPhone, so the
+        // model comes from the HKDevice the writer attached, if any.
+        let isAppleOwn = sourceRevision.source.bundleIdentifier.hasPrefix(Self.appleOwnSourcePrefix)
+        let productType = isAppleOwn ? sourceRevision.productType : nil
+        let deviceModel = isAppleOwn ? productType : device?.model
         var result: [String: Any] = [
             "appId": sourceRevision.source.bundleIdentifier,
             "name": sourceRevision.source.name,
             "deviceId": NSNull(),
             "deviceName": (device?.name) as Any? ?? NSNull(),
             "deviceManufacturer": (device?.manufacturer) as Any? ?? NSNull(),
-            "deviceModel": (sourceRevision.productType) as Any? ?? NSNull(),
-            "deviceType": _inferDeviceType(productType: sourceRevision.productType, device: device),
+            "deviceModel": deviceModel as Any? ?? NSNull(),
+            "deviceType": _inferDeviceType(productType: productType, device: device),
             "recordingMethod": NSNull()
         ]
 
@@ -1176,4 +1251,38 @@ extension OpenWearablesHealthSDK {
         default: return "unknown"
         }
     }
+}
+
+// MARK: - Sync Attribution
+
+/// What started a sync run. Sent with every upload as `X-Open-Wearables-Sync-Trigger`,
+/// so server logs can tell HealthKit wake-ups from BGTasks and app launches.
+internal enum SyncTrigger: String {
+    /// `startBackgroundSync()` - first export or the incremental sync right after it.
+    case start
+    /// Interrupted sync resumed when a saved session is restored on launch.
+    case restore
+    /// `resumeSync()` called by the app.
+    case resume
+    /// Full export started by `resetAnchors()`.
+    case reset
+    /// HealthKit background delivery woke the app.
+    case healthKitObserver = "healthkit_observer"
+    case appRefresh = "bg_app_refresh"
+    case processing = "bg_processing"
+    /// Interrupted sync resumed when the app returned to the foreground.
+    case foreground
+    /// Deferred sync resumed after the device was unlocked.
+    case unlock
+    /// Sync resumed after the network came back.
+    case network
+}
+
+/// Sync attribution sent as headers on an upload. Captured when the batch is built,
+/// so a 401 retry reports the same state as the original attempt.
+internal struct SyncRequestContext {
+    let inBackground: Bool
+    let trigger: SyncTrigger
+
+    var appState: String { inBackground ? "background" : "foreground" }
 }

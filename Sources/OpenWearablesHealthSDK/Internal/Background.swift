@@ -91,7 +91,7 @@ extension OpenWearablesHealthSDK {
             let group = DispatchGroup()
             group.enter()
             
-            self?.collectAllData(fullExport: false, isBackground: true) {
+            self?.collectAllData(fullExport: false, isBackground: true, trigger: .appRefresh) {
                 group.leave()
             }
             
@@ -120,7 +120,7 @@ extension OpenWearablesHealthSDK {
             group.enter()
             
             self?.retryOutboxIfPossible()
-            self?.collectAllData(fullExport: false, isBackground: true) {
+            self?.collectAllData(fullExport: false, isBackground: true, trigger: .processing) {
                 group.leave()
             }
             
