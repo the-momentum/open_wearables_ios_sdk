@@ -367,6 +367,18 @@ public enum HealthDataType: String, CaseIterable, Sendable {
 
 extension OpenWearablesHealthSDK {
 
+    // MARK: - Deletions
+
+    /// Food and water items, which the backend stores one row per item and removes by id. A deleted sample of
+    /// another type isn't sent, as the backend keeps one value per instant there and can't tell which it was.
+    internal static func sendsDeletions(of type: HKSampleType) -> Bool {
+        type.identifier.hasPrefix("HKQuantityTypeIdentifierDietary")
+    }
+
+    internal static func deletionEntries(type: HKSampleType, ids: [UUID]) -> [[String: String]] {
+        ids.map { ["id": $0.uuidString, "type": type.identifier] }
+    }
+
     // MARK: - Combined payload
 
     /// Builds one combined sync payload from the samples collected in a round.
@@ -381,6 +393,7 @@ extension OpenWearablesHealthSDK {
     /// query sends them with `parentId`, in this round or another one.
     internal func buildCombinedPayload(
         samples: [HKSample],
+        deletions: [[String: String]] = [],
         knownFoodChildIds: Set<UUID> = [],
         workoutRoutes: [UUID: [CLLocation]] = [:]
     ) -> [String: Any] {
@@ -430,15 +443,19 @@ extension OpenWearablesHealthSDK {
             }
         }
         
+        var data: [String: Any] = [
+            "workouts": workouts,
+            "records": records,
+            "sleep": sleep
+        ]
+        if !deletions.isEmpty {
+            data["deletions"] = deletions
+        }
         var payload: [String: Any] = [
             "provider": "apple",
             "sdkVersion": OpenWearablesHealthSDK.sdkVersion,
             "syncTimestamp": dateFormatter.string(from: Date()),
-            "data": [
-                "workouts": workouts,
-                "records": records,
-                "sleep": sleep
-            ]
+            "data": data
         ]
         // Backend already reads these (`body.get`); without them the batch is treated as
         // a session-less live upload and cannot be joined to the SyncRun the logs open.
